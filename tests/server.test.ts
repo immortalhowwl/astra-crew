@@ -85,6 +85,9 @@ test("Desk serves the UI, health, and a read-only live snapshot with defensive h
   assert.match(deskScript, /robinhoodchain\.blockscout\.com\/address/);
   assert.match(deskScript, /robinhoodchain\.blockscout\.com\/tx/);
   assert.doesNotMatch(deskScript, /dblclick/);
+
+  const deskCss = await (await fetch(`${base}/desk.css`)).text();
+  assert.match(deskCss, /\.agent small\{[^}]*bottom:7px/);
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
   assert.match(page.headers.get("content-security-policy") ?? "", /default-src 'self'/);
 
