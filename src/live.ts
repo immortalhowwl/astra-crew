@@ -26,13 +26,18 @@ export interface LiveLaunch {
   logIndex: number;
 }
 
-const HEX_32 = /^[0-9a-fA-F]{64}$/;
+const ABI_ADDRESS_WORD = /^0{24}[0-9a-fA-F]{40}$/;
+const ADDRESS_TOPIC = /^0x0{24}[0-9a-fA-F]{40}$/;
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 function addressFromWord(word: string): string | null {
-  if (!HEX_32.test(word)) return null;
+  if (!ABI_ADDRESS_WORD.test(word)) return null;
   const address = `0x${word.slice(24)}`.toLowerCase();
   return ADDRESS.test(address) ? address : null;
+}
+
+function addressFromTopic(topic: string): string | null {
+  return ADDRESS_TOPIC.test(topic) ? addressFromWord(topic.slice(2)) : null;
 }
 
 function parseHexInteger(value: string): number | null {
@@ -49,9 +54,9 @@ export function decodeTokenLaunchedLog(log: RpcLog): LiveLaunch | null {
   if (log.address.toLowerCase() !== PONS_FACTORY) return null;
   if (log.topics.length !== 4 || log.topics[0]?.toLowerCase() !== TOKEN_LAUNCHED_TOPIC) return null;
   if (!/^0x[0-9a-fA-F]{192}$/.test(log.data)) return null;
-  const token = addressFromWord(log.topics[1]?.slice(2) ?? "");
-  const curve = addressFromWord(log.topics[2]?.slice(2) ?? "");
-  const deployer = addressFromWord(log.topics[3]?.slice(2) ?? "");
+  const token = addressFromTopic(log.topics[1] ?? "");
+  const curve = addressFromTopic(log.topics[2] ?? "");
+  const deployer = addressFromTopic(log.topics[3] ?? "");
   const words = log.data.slice(2).match(/.{64}/g);
   if (!token || !curve || !deployer || !words || words.length !== 3) return null;
   const pairToken = addressFromWord(words[0] ?? "");

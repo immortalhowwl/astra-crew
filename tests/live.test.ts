@@ -58,6 +58,59 @@ test("rejects malformed, unrelated, and spoofed-factory logs instead of inventin
   }), null);
 });
 
+test("rejects ABI address topics with non-zero upper padding", () => {
+  const token = "0x1111111111111111111111111111111111111111";
+  const decoded = decodeTokenLaunchedLog({
+    address: "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e",
+    blockNumber: "0x1",
+    transactionHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    logIndex: "0x0",
+    topics: [
+      TOKEN_LAUNCHED_TOPIC,
+      `0x${"f".repeat(24)}${token.slice(2)}`,
+      addressTopic("0x2222222222222222222222222222222222222222"),
+      addressTopic("0x3333333333333333333333333333333333333333")
+    ],
+    data: `0x${word("0x0000000000000000000000000000000000000000")}${word("0x0")}${word("0x3a4")}`
+  });
+  assert.equal(decoded, null);
+});
+
+test("rejects ABI address topics without the canonical 0x prefix", () => {
+  const token = "0x1111111111111111111111111111111111111111";
+  const decoded = decodeTokenLaunchedLog({
+    address: "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e",
+    blockNumber: "0x1",
+    transactionHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    logIndex: "0x0",
+    topics: [
+      TOKEN_LAUNCHED_TOPIC,
+      `aa${word(token)}`,
+      addressTopic("0x2222222222222222222222222222222222222222"),
+      addressTopic("0x3333333333333333333333333333333333333333")
+    ],
+    data: `0x${word("0x0000000000000000000000000000000000000000")}${word("0x0")}${word("0x3a4")}`
+  });
+  assert.equal(decoded, null);
+});
+
+test("rejects ABI address data words with non-zero upper padding", () => {
+  const decoded = decodeTokenLaunchedLog({
+    address: "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e",
+    blockNumber: "0x1",
+    transactionHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    logIndex: "0x0",
+    topics: [
+      TOKEN_LAUNCHED_TOPIC,
+      addressTopic("0x1111111111111111111111111111111111111111"),
+      addressTopic("0x2222222222222222222222222222222222222222"),
+      addressTopic("0x3333333333333333333333333333333333333333")
+    ],
+    data: `0x${"f".repeat(24)}${"0".repeat(40)}${word("0x0")}${word("0x3a4")}`
+  });
+  assert.equal(decoded, null);
+});
+
 test("fetches real-shaped Robinhood logs and turns each launch into ten inspectable handoffs", async () => {
   const token = "0x1111111111111111111111111111111111111111";
   const curve = "0x2222222222222222222222222222222222222222";
