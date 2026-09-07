@@ -12,6 +12,7 @@
   <header class="masthead">
     <div class="brand"><span>GPT</span>HEIST <sup>DESK</sup></div>
     <div class="chain-lock"><i id="pulse"></i><span>ROBINHOOD CHAIN</span><b id="block">CONNECTING</b></div>
+    <button id="get-token" class="buy-cta" type="button" disabled aria-disabled="true">GET $GPTHEIST · SOON</button>
     <div class="safety">READ-ONLY<br><b>NO WALLET · NO EXECUTION</b></div>
   </header>
 
@@ -22,13 +23,18 @@
       <p class="lede">Every new Pons launch crosses the room. Each role adds evidence. Palermo can kill the route. Professor never sends an order.</p>
       <div class="metrics" aria-label="Live metrics">
         <div><span>WINDOW</span><strong id="launch-count">—</strong><small>launches</small></div>
-        <div><span>VERIFIED</span><strong id="verified-count">—</strong><small>onchain</small></div>
-        <div><span>ACTION</span><strong id="veto-count">—</strong><small>vetoed</small></div>
+        <div><span>WATCH</span><strong id="watch-count">—</strong><small>monitor</small></div>
+        <div><span>VETO</span><strong id="veto-count">—</strong><small>blocked</small></div>
       </div>
     </section>
 
     <section class="route-panel" aria-label="Agent decision route">
       <div class="panel-head"><span>DECISION ROUTE</span><b id="selected-token">AWAITING TARGET</b></div>
+      <nav class="target-links" aria-label="Selected launch links">
+        <a id="pons-link" href="https://www.ponsfamily.com/launchpad/" target="_blank" rel="noopener noreferrer">PONS ↗</a>
+        <a id="token-link" href="https://robinhoodchain.blockscout.com/" target="_blank" rel="noopener noreferrer">TOKEN ↗</a>
+        <a id="tx-link" href="https://robinhoodchain.blockscout.com/" target="_blank" rel="noopener noreferrer">TX ↗</a>
+      </nav>
       <div class="route" id="route"></div>
       <div class="decision-card" id="decision-card">
         <div class="crosshair" aria-hidden="true"></div>
@@ -36,10 +42,24 @@
         <strong id="decision">STANDBY</strong>
         <p id="decision-copy">Waiting for a verified factory event.</p>
       </div>
+      <div class="evidence-card">
+        <div class="evidence-grid">
+          <div><span>SCORE / 100</span><strong id="score">—</strong></div>
+          <div><span>CURVE</span><strong id="progress">—</strong></div>
+          <div><span>PHASE</span><strong id="phase">—</strong></div>
+          <div><span>CREATOR / SNIPE</span><strong id="taxes">—</strong></div>
+        </div>
+        <div class="evidence-copy"><span>EVIDENCE</span><p id="evidence">Select a launch to inspect the score.</p></div>
+      </div>
     </section>
 
     <aside class="feed-panel">
       <div class="panel-head"><span>LIVE INTERCEPTS</span><b id="sync">SYNCING</b></div>
+      <div class="filters" aria-label="Filter launches">
+        <button type="button" class="active" data-filter="ALL">ALL</button>
+        <button type="button" data-filter="WATCH">WATCH</button>
+        <button type="button" data-filter="VETO">VETO</button>
+      </div>
       <div class="feed" id="feed" aria-live="polite"></div>
     </aside>
 
@@ -51,6 +71,11 @@
 
   <footer>
     <span>FACTORY <a href="https://robinhoodchain.blockscout.com/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e" target="_blank" rel="noreferrer">0x7eD5…EC7e ↗</a></span>
+    <nav class="social-links" aria-label="GPTHEIST links">
+      <a href="https://x.com/immortalhowwl" target="_blank" rel="noopener noreferrer">LOGICS ↗</a>
+      <a href="https://x.com/GPTHEIST" target="_blank" rel="noopener noreferrer">$GPTHEIST ↗</a>
+      <a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+    </nav>
     <span id="updated">NOT YET SYNCED</span>
     <span>OBSERVATION POLICY v1</span>
   </footer>

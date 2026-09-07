@@ -95,9 +95,10 @@ async function main(args: string[]): Promise<void> {
         await access(runs, constants.W_OK);
         return true;
       }],
-      ["zero runtime dependencies", async () => {
+      ["runtime dependencies allowlisted", async () => {
         const pkg = JSON.parse(await readFile(resolve(projectRoot, "package.json"), "utf8")) as { dependencies?: Record<string, string> };
-        return Object.keys(pkg.dependencies ?? {}).length === 0;
+        const dependencies = Object.keys(pkg.dependencies ?? {}).sort();
+        return dependencies.length === 1 && dependencies[0] === "viem";
       }],
       ["execution boundary: paper-only", async () => EXECUTION_MODE === "paper-only"]
     ];

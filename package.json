@@ -11,7 +11,13 @@
   "bugs": {
     "url": "https://github.com/immortalhowwl/gptheist/issues"
   },
-  "keywords": ["multi-agent", "paper-trading", "market-replay", "risk", "cli"],
+  "keywords": [
+    "multi-agent",
+    "paper-trading",
+    "market-replay",
+    "risk",
+    "cli"
+  ],
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -28,6 +34,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/cli.js desk --host 0.0.0.0 --port ${PORT:-4173}",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "demo": "npm run build --silent && node dist/src/cli.js demo",
     "desk": "npm run build --silent && node dist/src/cli.js desk",
@@ -39,5 +46,8 @@
   "devDependencies": {
     "@types/node": "^18.19.0",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "viem": "^2.56.3"
   }
 }

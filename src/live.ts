@@ -1,4 +1,5 @@
 import { AGENTS, type AgentHandoff, type AgentOutcome } from "./simulation.js";
+import { assessPonsLaunch, readPonsMarketStates, type PonsAssessment, type PonsMarketState } from "./market.js";
 
 export const ROBINHOOD_CHAIN_ID = 4663;
 export const PONS_FACTORY = "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e";
@@ -81,6 +82,8 @@ export type RpcCaller = (method: string, params?: unknown[]) => Promise<unknown>
 export interface LiveLaunchDecision extends LiveLaunch {
   verdict: "WATCH" | "VETO";
   pairLabel: "ETH" | "OTHER";
+  market: PonsMarketState;
+  assessment: PonsAssessment;
   handoffs: AgentHandoff[];
 }
 
@@ -95,19 +98,34 @@ export interface LiveSnapshot {
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-function liveHandoffs(launch: LiveLaunch): AgentHandoff[] {
+function liveHandoffs(launch: LiveLaunch, market: PonsMarketState, assessment: PonsAssessment): AgentHandoff[] {
   const isEthPair = launch.pairToken === ZERO_ADDRESS;
+  const verified = market.status === "VERIFIED";
   const entries: Array<[AgentOutcome, string]> = [
     ["INFO", `Detected Pons v2 launch in block ${launch.blockNumber}.`],
     ["INFO", "Policy locked: observe verified factory events; never sign or execute."],
-    ["PASS", `Transaction and log index verified: ${launch.transactionHash.slice(0, 12)}…:${launch.logIndex}.`],
+    [verified ? "PASS" : "VETO", verified
+      ? `Curve state verified: ${market.progressBps / 100}% to graduation; current snipe tax ${market.currentSnipeTaxBps / 100}%.`
+      : `Market state unavailable: ${market.reason}`],
     ["INFO", "Social evidence not claimed by this read-only feed."],
-    ["PASS", "Token, curve, deployer, pair, and launch parameters decoded from the event."],
-    ["VETO", isEthPair ? "Native ETH pair found, but liquidity and slippage evidence are unavailable." : "Non-ETH pair is outside the default policy; liquidity and slippage evidence are unavailable."],
-    ["INFO", "Brief: launch provenance verified; price, liquidity, slippage, and social evidence remain unavailable."],
+    [verified ? "PASS" : "VETO", verified
+      ? "Factory record and curve state verified against the launch event."
+      : "Factory record and curve state could not be verified."],
+    [verified ? "INFO" : "VETO", isEthPair
+      ? verified
+        ? `Native ETH pair and reserves verified at ${(market.progressBps / 100).toFixed(2)}% curve progress, but executable quote and slippage evidence are not available yet.`
+        : "Native ETH pair found, but liquidity and slippage evidence are unavailable."
+      : "Non-ETH pair is outside the default policy."],
+    ["INFO", verified
+      ? `Brief: on-chain evidence verified; creator tax ${market.creatorTaxBps / 100}%; social and slippage checks remain unresolved.`
+      : "Brief: launch provenance verified; market, slippage, and social checks remain unresolved."],
     ["INFO", `Explorer-linked trace ${launch.transactionHash.slice(2, 18)} prepared.`],
-    ["VETO", "Veto: insufficient market evidence for any trading action."],
-    ["VETO", "No action approved; no order was sent."]
+    [assessment.verdict === "WATCH" ? "PASS" : "VETO", assessment.verdict === "WATCH"
+      ? `Watch gate cleared at ${assessment.score}/100; unresolved evidence remains visible.`
+      : `Veto: ${assessment.blockers.join("; ")}.`],
+    [assessment.verdict === "WATCH" ? "PASS" : "VETO", assessment.verdict === "WATCH"
+      ? "WATCH approved for read-only monitoring; no order was sent."
+      : "No action approved; no order was sent."]
   ];
   const timestamp = new Date().toISOString();
   return entries.map(([outcome, message], index): AgentHandoff => ({
@@ -150,13 +168,16 @@ export async function fetchLiveSnapshot(rpc: RpcCaller, options: { blockWindow?:
     toBlock: headHex
   }]);
   if (!Array.isArray(rawLogs)) throw new Error("RPC returned invalid launch logs");
-  const launches = rawLogs.filter(isRpcLog).map(decodeTokenLaunchedLog).filter((launch): launch is LiveLaunch => launch !== null)
+  const decodedLaunches = rawLogs.filter(isRpcLog).map(decodeTokenLaunchedLog).filter((launch): launch is LiveLaunch => launch !== null)
     .sort((a, b) => b.blockNumber - a.blockNumber || b.logIndex - a.logIndex)
-    .slice(0, 24)
-    .map((launch): LiveLaunchDecision => {
-      const pairLabel = launch.pairToken === ZERO_ADDRESS ? "ETH" : "OTHER";
-      return { ...launch, pairLabel, verdict: "VETO", handoffs: liveHandoffs(launch) };
-    });
+    .slice(0, 24);
+  const markets = await readPonsMarketStates(rpc, decodedLaunches, headHex);
+  const launches = decodedLaunches.map((launch, index): LiveLaunchDecision => {
+    const market = markets[index] ?? { status: "UNAVAILABLE", reason: "market evidence missing" };
+    const pairLabel = launch.pairToken === ZERO_ADDRESS ? "ETH" : "OTHER";
+    const assessment = assessPonsLaunch(pairLabel, market);
+    return { ...launch, pairLabel, market, assessment, verdict: assessment.verdict, handoffs: liveHandoffs(launch, market, assessment) };
+  });
   return {
     chainId: ROBINHOOD_CHAIN_ID,
     headBlock,

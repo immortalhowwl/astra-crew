@@ -66,6 +66,25 @@ test("Desk serves the UI, health, and a read-only live snapshot with defensive h
   const page = await fetch(`${base}/`);
   assert.equal(page.status, 200);
   assert.match(await page.text(), /GPTHEIST DESK/);
+  const productPage = await fetch(`${base}/`);
+  const productHtml = await productPage.text();
+  assert.match(productHtml, /SCORE \/ 100/);
+  assert.match(productHtml, /data-filter="WATCH"/);
+  assert.match(productHtml, /EVIDENCE/);
+  assert.match(productHtml, /id="pons-link"/);
+  assert.match(productHtml, /id="token-link"/);
+  assert.match(productHtml, /id="tx-link"/);
+  assert.match(productHtml, /GET \$GPTHEIST/);
+  assert.match(productHtml, /aria-disabled="true"/);
+  assert.match(productHtml, /https:\/\/x\.com\/immortalhowwl/);
+  assert.match(productHtml, /https:\/\/x\.com\/GPTHEIST/);
+  assert.match(productHtml, /https:\/\/github\.com\/immortalhowwl\/gptheist/);
+
+  const deskScript = await (await fetch(`${base}/desk.js`)).text();
+  assert.match(deskScript, /ponsfamily\.com\/launchpad/);
+  assert.match(deskScript, /robinhoodchain\.blockscout\.com\/address/);
+  assert.match(deskScript, /robinhoodchain\.blockscout\.com\/tx/);
+  assert.doesNotMatch(deskScript, /dblclick/);
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
   assert.match(page.headers.get("content-security-policy") ?? "", /default-src 'self'/);
 
