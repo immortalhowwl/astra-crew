@@ -37,7 +37,7 @@ The demo is fully offline and uses the bundled `fixtures/success.json` replay.
 GPTHEIST — PAPER-TRADING REPLAY
 Safety: simulation only; no wallet, signing, private keys, or live execution.
 
-[2026-01-15T12:00:00.000Z] TOKYO      INFO :: Scout — Observed BTC-USD at 100000.00 from bundled replay data.
+[2026-01-15T12:00:00.000Z] TOKYO      INFO :: Scout — Observed GPTHEIST-USDC at 0.42 from bundled replay data.
 [2026-01-15T12:00:01.000Z] BERLIN     INFO :: Planner / criteria — Criteria locked: momentum >= 0.55, social quality >= 0.50/100 samples, liquidity >= $1m, slippage <= 25 bps.
 [2026-01-15T12:00:02.000Z] RIO        PASS :: Technical / chart analysis — Momentum score 0.72.
 [2026-01-15T12:00:03.000Z] DENVER     PASS :: Social-signal quality — Social score 0.66 across 250 fixture samples.
@@ -49,8 +49,8 @@ Safety: simulation only; no wallet, signing, private keys, or live execution.
 [2026-01-15T12:00:09.000Z] PROFESSOR  PASS :: Final coordinator / decision — Approved for paper simulation only; no order was sent.
 
 FINAL: PASS — approved (paper-only; executed=false)
-Paper trade: BUY 1.50% BTC-USD @ 100000.00
-Audit: runs/9d64be648f8a52d3.jsonl
+Paper trade: BUY 1.50% GPTHEIST-USDC @ 0.42
+Audit: runs/b8d3603a21d62139.jsonl
 ```
 
 ## Commands
