@@ -22,8 +22,8 @@
       <p class="lede">Every new Pons launch crosses the room. Each role adds evidence. Palermo can kill the route. Professor never sends an order.</p>
       <div class="metrics" aria-label="Live metrics">
         <div><span>WINDOW</span><strong id="launch-count">—</strong><small>launches</small></div>
-        <div><span>VERIFIED</span><strong id="verified-count">—</strong><small>onchain</small></div>
-        <div><span>ACTION</span><strong id="veto-count">—</strong><small>vetoed</small></div>
+        <div><span>WATCH</span><strong id="watch-count">—</strong><small>monitor</small></div>
+        <div><span>VETO</span><strong id="veto-count">—</strong><small>blocked</small></div>
       </div>
     </section>
 
@@ -36,10 +36,24 @@
         <strong id="decision">STANDBY</strong>
         <p id="decision-copy">Waiting for a verified factory event.</p>
       </div>
+      <div class="evidence-card">
+        <div class="evidence-grid">
+          <div><span>SCORE / 100</span><strong id="score">—</strong></div>
+          <div><span>CURVE</span><strong id="progress">—</strong></div>
+          <div><span>PHASE</span><strong id="phase">—</strong></div>
+          <div><span>TAX / OPEN</span><strong id="taxes">—</strong></div>
+        </div>
+        <div class="evidence-copy"><span>EVIDENCE</span><p id="evidence">Select a launch to inspect the score.</p></div>
+      </div>
     </section>
 
     <aside class="feed-panel">
       <div class="panel-head"><span>LIVE INTERCEPTS</span><b id="sync">SYNCING</b></div>
+      <div class="filters" aria-label="Filter launches">
+        <button type="button" class="active" data-filter="ALL">ALL</button>
+        <button type="button" data-filter="WATCH">WATCH</button>
+        <button type="button" data-filter="VETO">VETO</button>
+      </div>
       <div class="feed" id="feed" aria-live="polite"></div>
     </aside>
 

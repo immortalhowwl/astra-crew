@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/immortalhowwl/gptheist/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/immortalhowwl/gptheist/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="mode" src="https://img.shields.io/badge/mode-paper--only-e5484d">
-  <img alt="runtime dependencies" src="https://img.shields.io/badge/runtime%20dependencies-0-f4efe6">
+  <img alt="runtime dependencies" src="https://img.shields.io/badge/runtime%20dependencies-viem-f4efe6">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-f4efe6">
 </p>
 
@@ -139,7 +139,7 @@ These thresholds are demonstration rules, not trading advice or validated predic
 - not a wallet, exchange, broker, or execution system;
 - not able to place, sign, route, or settle orders.
 
-The Desk is connected only to public, read-only Robinhood Chain RPC endpoints. It verifies factory event provenance, not market quality. **Every live launch remains VETOED** until price, liquidity, slippage, and social evidence exist.
+The Desk is connected only to public, read-only Robinhood Chain RPC endpoints. It verifies factory provenance and reads each launch's current Pons state at the same snapshot block. A deterministic score can place supported ETH launches on the **WATCH** list; unsupported pairs, unsafe taxes, completed/rescued curves, malformed evidence, and unavailable reads receive an explicit **VETO**. WATCH is observation only, never an order or promise of market quality.
 
 It is an open, deterministic reference implementation of the **ownership → handoff → veto → final decision** pattern. Use it to inspect and extend the coordination logic before connecting any external system.
 
@@ -152,7 +152,7 @@ npm run build
 npm pack --dry-run
 ```
 
-The project has zero runtime dependencies. TypeScript and Node type definitions are development dependencies only. CI tests Node 18 and Node 20.
+The only direct runtime dependency is `viem`, used to ABI-encode and decode pinned read-only Multicall3 requests. CI tests Node 18 and Node 20, and dependency audits run before release.
 
 ## Safety
 

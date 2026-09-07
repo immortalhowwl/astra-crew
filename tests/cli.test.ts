@@ -46,7 +46,7 @@ test("doctor checks Node, fixtures, audit directory, dependencies, and paper-onl
   assert.match(output, /PASS Node\.js >= 18/);
   assert.match(output, /PASS bundled demo fixture/);
   assert.match(output, /PASS runs directory writable and safe/);
-  assert.match(output, /PASS zero runtime dependencies/);
+  assert.match(output, /PASS runtime dependencies allowlisted/);
   assert.match(output, /PASS execution boundary: paper-only/);
   assert.match(output, /Doctor: 5\/5 checks passed/);
 });

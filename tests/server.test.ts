@@ -66,6 +66,11 @@ test("Desk serves the UI, health, and a read-only live snapshot with defensive h
   const page = await fetch(`${base}/`);
   assert.equal(page.status, 200);
   assert.match(await page.text(), /GPTHEIST DESK/);
+  const productPage = await fetch(`${base}/`);
+  const productHtml = await productPage.text();
+  assert.match(productHtml, /SCORE \/ 100/);
+  assert.match(productHtml, /data-filter="WATCH"/);
+  assert.match(productHtml, /EVIDENCE/);
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
   assert.match(page.headers.get("content-security-policy") ?? "", /default-src 'self'/);
 
