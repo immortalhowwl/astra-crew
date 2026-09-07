@@ -1,6 +1,6 @@
-# ASTRA CREW agent contract
+# GPTHEIST agent contract
 
-ASTRA CREW models ten named responsibilities as deterministic pipeline stages. In this version, an “agent” is an inspectable rules stage, not a live LLM process. Every stage receives the same immutable replay fixture plus prior handoffs.
+GPTHEIST models ten named responsibilities as deterministic pipeline stages. In this version, an “agent” is an inspectable rules stage, not a live LLM process. Every stage receives the same immutable replay fixture plus prior handoffs.
 
 ## Shared rules
 

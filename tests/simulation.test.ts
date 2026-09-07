@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, symlink } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -47,7 +47,7 @@ test("Palermo vetoes an unsafe signal and the JSONL audit is valid", async () =>
   assert.equal(result.paperTrade.side, "NONE");
   assert.equal(result.paperTrade.executed, false);
 
-  const directory = await mkdtemp(join(tmpdir(), "astra-crew-"));
+  const directory = await mkdtemp(join(tmpdir(), "gptheist-"));
   const logPath = await writeJsonlLog(result, directory);
   const records = (await readFile(logPath, "utf8")).trim().split("\n").map((line) => JSON.parse(line) as { type: string });
   assert.equal(records.length, 11);
@@ -55,7 +55,7 @@ test("Palermo vetoes an unsafe signal and the JSONL audit is valid", async () =>
 });
 
 test("audit writer rejects run IDs that can escape the audit directory", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "astra-crew-"));
+  const directory = await mkdtemp(join(tmpdir(), "gptheist-"));
   const result = runSimulation(safeFixture);
   result.runId = "../../outside-log";
 
@@ -144,20 +144,37 @@ test("fixture-derived display strings cannot inject ANSI, newlines, or control c
   assert.match(result.paperTrade.market, /\\u000d\\u000a\\u001b\[31m-USD/);
   assert.equal(fixture.market, "BTC\r\n\u001b[31m-USD");
 
-  const directory = await mkdtemp(join(tmpdir(), "astra-crew-"));
+  const directory = await mkdtemp(join(tmpdir(), "gptheist-"));
   const records = (await readFile(await writeJsonlLog(result, directory), "utf8"))
     .trim().split("\n").map((line) => JSON.parse(line) as unknown);
   assert.doesNotMatch(JSON.stringify(records), /[\u0000-\u001f\u007f-\u009f]/);
 });
 
 test("audit writer rejects a symlinked audit directory", async () => {
-  const root = await mkdtemp(join(tmpdir(), "astra-crew-symlink-"));
-  const target = await mkdtemp(join(tmpdir(), "astra-crew-target-"));
+  const root = await mkdtemp(join(tmpdir(), "gptheist-symlink-"));
+  const target = await mkdtemp(join(tmpdir(), "gptheist-target-"));
   const linkedDirectory = join(root, "runs");
   await symlink(target, linkedDirectory, "dir");
 
   await assert.rejects(
     writeJsonlLog(runSimulation(safeFixture), linkedDirectory),
     /Audit directory must not contain symlinks/
+  );
+});
+
+test("audit writer never follows an existing final-path symlink", async () => {
+  const root = await mkdtemp(join(tmpdir(), "gptheist-final-symlink-"));
+  const source = join(root, "source");
+  const auditDirectory = join(root, "runs");
+  await mkdir(source);
+  await mkdir(auditDirectory);
+
+  const result = runSimulation(safeFixture);
+  const legitimatePath = await writeJsonlLog(result, source);
+  await symlink(legitimatePath, join(auditDirectory, `${result.runId}.jsonl`));
+
+  await assert.rejects(
+    writeJsonlLog(result, auditDirectory),
+    /symlink|regular file/i
   );
 });

@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="./assets/avatar.jpg" alt="ASTRA CREW" width="128">
+  <img src="./assets/avatar.jpg" alt="GPTHEIST" width="128">
 </p>
 <p align="center">
-  <img src="./assets/banner.jpg" alt="ASTRA CREW — Ten agents. One decision." width="100%">
+  <img src="./assets/banner.jpg" alt="GPTHEIST — Ten agents. One decision." width="100%">
 </p>
 
 <p align="center">
@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/immortalhowwl/astra-crew/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/immortalhowwl/astra-crew/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/immortalhowwl/gptheist/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/immortalhowwl/gptheist/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="mode" src="https://img.shields.io/badge/mode-paper--only-e5484d">
   <img alt="runtime dependencies" src="https://img.shields.io/badge/runtime%20dependencies-0-f4efe6">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-f4efe6">
 </p>
 
-ASTRA CREW is a deterministic, inspectable market-replay CLI inspired by the ten-agent operating system described by [@immortalhowwl](https://x.com/immortalhowwl). Each specialist owns one gate. Every handoff is visible. Palermo can veto the run. Professor returns one final decision.
+GPTHEIST is a deterministic, inspectable market-replay CLI inspired by the ten-agent operating system described by [@immortalhowwl](https://x.com/immortalhowwl). Each specialist owns one gate. Every handoff is visible. Palermo can veto the run. Professor returns one final decision.
 
 It is intentionally **paper-only**: no wallet connection, private key, signing, RPC, brokerage integration, or live order execution exists in this repository.
 
@@ -25,8 +25,8 @@ It is intentionally **paper-only**: no wallet connection, private key, signing, 
 Requires Node.js 18 or newer.
 
 ```bash
-git clone https://github.com/immortalhowwl/astra-crew.git
-cd astra-crew
+git clone https://github.com/immortalhowwl/gptheist.git
+cd gptheist
 npm install
 npm run demo
 ```
@@ -34,7 +34,7 @@ npm run demo
 The demo is fully offline and uses the bundled `fixtures/success.json` replay.
 
 ```text
-ASTRA CREW — PAPER-TRADING REPLAY
+GPTHEIST — PAPER-TRADING REPLAY
 Safety: simulation only; no wallet, signing, private keys, or live execution.
 
 [2026-01-15T12:00:00.000Z] TOKYO      INFO :: Scout — Observed BTC-USD at 100000.00 from bundled replay data.
@@ -66,10 +66,10 @@ Audit: runs/9d64be648f8a52d3.jsonl
 After `npm link`, use the shorter binary form:
 
 ```bash
-astra-crew demo
-astra-crew replay fixtures/veto.json
-astra-crew agents
-astra-crew doctor
+gptheist demo
+gptheist replay fixtures/veto.json
+gptheist agents
+gptheist doctor
 ```
 
 ## The handoff
@@ -103,7 +103,7 @@ npm run build
 node dist/src/cli.js replay my-replay.json
 ```
 
-Every input is local JSON. ASTRA CREW does not fetch market data. Fixtures are schema-validated before the first handoff, and terminal control characters are escaped. Identical input under the same policy version produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
+Every input is local JSON. GPTHEIST does not fetch market data. Fixtures are schema-validated before the first handoff, and terminal control characters are escaped. Identical input under the same policy version produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
 
 A run is vetoed when any configured boundary fails, including:
 

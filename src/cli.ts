@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { access, mkdir, readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS, EXECUTION_MODE, runSimulation, sanitizeTerminal, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
+import { AGENTS, EXECUTION_MODE, ensureSafeAuditDirectory, runSimulation, sanitizeTerminal, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -26,7 +26,7 @@ async function loadFixture(path: string): Promise<ReplayFixture> {
 
 function formatResult(result: SimulationResult, logPath: string): string {
   const lines = [
-    "ASTRA CREW — PAPER-TRADING REPLAY",
+    "GPTHEIST — PAPER-TRADING REPLAY",
     "Safety: simulation only; no wallet, signing, private keys, or live execution.",
     ""
   ];
@@ -53,12 +53,12 @@ async function main(args: string[]): Promise<void> {
   }
   if (command === "replay") {
     const fixturePath = args[1];
-    if (fixturePath === undefined) throw new Error("Usage: astra-crew replay <fixture.json>");
+    if (fixturePath === undefined) throw new Error("Usage: gptheist replay <fixture.json>");
     await runFixture(resolve(process.cwd(), fixturePath));
     return;
   }
   if (command === "agents") {
-    process.stdout.write("ASTRA CREW — TEN AGENTS, ONE DECISION\n\n");
+    process.stdout.write("GPTHEIST — TEN AGENTS, ONE DECISION\n\n");
     AGENTS.forEach((agent, index) => {
       process.stdout.write(`${index + 1}. ${agent.name} — ${agent.role}\n   ${agent.responsibility}\n`);
     });
@@ -71,9 +71,9 @@ async function main(args: string[]): Promise<void> {
         await access(resolve(projectRoot, "fixtures/success.json"), constants.R_OK);
         return true;
       }],
-      ["runs directory writable", async () => {
+      ["runs directory writable and safe", async () => {
         const runs = resolve(process.cwd(), "runs");
-        await mkdir(runs, { recursive: true });
+        await ensureSafeAuditDirectory(runs);
         await access(runs, constants.W_OK);
         return true;
       }],
@@ -102,13 +102,13 @@ async function main(args: string[]): Promise<void> {
   }
   if (command === "help" || command === "--help" || command === "-h") {
     process.stdout.write([
-      "ASTRA CREW — deterministic ten-agent market replay",
+      "GPTHEIST — deterministic ten-agent market replay",
       "",
       "Usage:",
-      "  astra-crew demo",
-      "  astra-crew replay <fixture.json>",
-      "  astra-crew agents",
-      "  astra-crew doctor",
+      "  gptheist demo",
+      "  gptheist replay <fixture.json>",
+      "  gptheist agents",
+      "  gptheist doctor",
       "",
       "Paper-only. No wallet access. No live execution.",
       ""

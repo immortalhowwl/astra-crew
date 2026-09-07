@@ -1,21 +1,21 @@
 {
-  "name": "astra-crew",
+  "name": "gptheist",
   "version": "1.0.0",
   "description": "Ten agents pass one market decision forward. Any one of them can kill it.",
   "author": "immortalhowwl",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/immortalhowwl/astra-crew.git"
+    "url": "git+https://github.com/immortalhowwl/gptheist.git"
   },
-  "homepage": "https://github.com/immortalhowwl/astra-crew#readme",
+  "homepage": "https://github.com/immortalhowwl/gptheist#readme",
   "bugs": {
-    "url": "https://github.com/immortalhowwl/astra-crew/issues"
+    "url": "https://github.com/immortalhowwl/gptheist/issues"
   },
   "keywords": ["multi-agent", "paper-trading", "market-replay", "risk", "cli"],
   "license": "MIT",
   "type": "module",
   "bin": {
-    "astra-crew": "dist/src/cli.js"
+    "gptheist": "dist/src/cli.js"
   },
   "files": [
     "dist/src",

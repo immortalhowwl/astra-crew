@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { mkdir, open, realpath, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const AGENTS = [
@@ -190,22 +191,27 @@ export function runSimulation(fixture: ReplayFixture): SimulationResult {
   };
 }
 
+/** Creates or validates an audit directory without accepting symlinked path components. */
+export async function ensureSafeAuditDirectory(directory = "runs"): Promise<string> {
+  const auditDirectory = resolve(directory);
+  await mkdir(auditDirectory, { recursive: true });
+  if (await realpath(auditDirectory) !== auditDirectory) {
+    throw new Error("Audit directory must not contain symlinks");
+  }
+  return auditDirectory;
+}
+
 /** Writes an immutable JSONL trace. Replaying identical input reuses the identical trace. */
 export async function writeJsonlLog(result: SimulationResult, directory = "runs"): Promise<string> {
   if (!/^[0-9a-f]{16}$/.test(result.runId)) {
     throw new Error("runId must be lowercase 16-character hex");
   }
-  const auditDirectory = resolve(directory);
-  const resolvedPath = resolve(auditDirectory, `${result.runId}.jsonl`);
-  const relativePath = relative(auditDirectory, resolvedPath);
+  const auditDirectory = await ensureSafeAuditDirectory(directory);
+  const path = resolve(auditDirectory, `${result.runId}.jsonl`);
+  const relativePath = relative(auditDirectory, path);
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
     throw new Error("Audit log path must remain inside the audit directory");
   }
-  await mkdir(auditDirectory, { recursive: true });
-  if (await realpath(auditDirectory) !== auditDirectory) {
-    throw new Error("Audit directory must not contain symlinks");
-  }
-  const path = resolvedPath;
   const handoffs = result.agents.map((handoff) => JSON.stringify({
     type: "handoff",
     runId: result.runId,
@@ -224,10 +230,27 @@ export async function writeJsonlLog(result: SimulationResult, directory = "runs"
   });
   const content = `${[...handoffs, final].join("\n")}\n`;
   try {
-    await writeFile(path, content, { encoding: "utf8", flag: "wx" });
+    await writeFile(path, content, { encoding: "utf8", flag: "wx", mode: 0o600 });
   } catch (error: unknown) {
     if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error;
-    const existing = await readFile(path, "utf8");
+    let handle;
+    try {
+      handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    } catch (openError: unknown) {
+      if (openError instanceof Error && "code" in openError && openError.code === "ELOOP") {
+        throw new Error("Refusing to read an audit-log symlink");
+      }
+      throw openError;
+    }
+    let existing: string;
+    try {
+      const stats = await handle.stat();
+      if (!stats.isFile()) throw new Error("Existing audit log must be a regular file");
+      if (await realpath(path) !== path) throw new Error("Audit log path must remain inside the audit directory");
+      existing = await handle.readFile({ encoding: "utf8" });
+    } finally {
+      await handle.close();
+    }
     if (existing !== content) throw new Error(`Refusing to overwrite immutable audit log: ${path}`);
   }
   return path;
