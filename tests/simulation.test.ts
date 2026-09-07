@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -148,4 +148,16 @@ test("fixture-derived display strings cannot inject ANSI, newlines, or control c
   const records = (await readFile(await writeJsonlLog(result, directory), "utf8"))
     .trim().split("\n").map((line) => JSON.parse(line) as unknown);
   assert.doesNotMatch(JSON.stringify(records), /[\u0000-\u001f\u007f-\u009f]/);
+});
+
+test("audit writer rejects a symlinked audit directory", async () => {
+  const root = await mkdtemp(join(tmpdir(), "astra-crew-symlink-"));
+  const target = await mkdtemp(join(tmpdir(), "astra-crew-target-"));
+  const linkedDirectory = join(root, "runs");
+  await symlink(target, linkedDirectory, "dir");
+
+  await assert.rejects(
+    writeJsonlLog(runSimulation(safeFixture), linkedDirectory),
+    /Audit directory must not contain symlinks/
+  );
 });

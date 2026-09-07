@@ -3,7 +3,7 @@ import { access, mkdir, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS, EXECUTION_MODE, runSimulation, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
+import { AGENTS, EXECUTION_MODE, runSimulation, sanitizeTerminal, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -35,7 +35,7 @@ function formatResult(result: SimulationResult, logPath: string): string {
   }
   lines.push("", `FINAL: ${result.decision} — ${result.status} (${result.mode}; executed=${String(result.paperTrade.executed)})`);
   lines.push(`Paper trade: ${result.paperTrade.side} ${result.paperTrade.positionPct.toFixed(2)}% ${result.paperTrade.market} @ ${result.paperTrade.referencePrice.toFixed(2)}`);
-  lines.push(`Audit: ${logPath}`);
+  lines.push(`Audit: ${sanitizeTerminal(logPath)}`);
   return `${lines.join("\n")}\n`;
 }
 
@@ -115,7 +115,7 @@ async function main(args: string[]): Promise<void> {
     ].join("\n"));
     return;
   }
-  process.stderr.write(`Unknown command: ${command}\n`);
+  process.stderr.write(`Unknown command: ${sanitizeTerminal(command)}\n`);
   process.exitCode = 1;
 }
 
@@ -123,7 +123,7 @@ try {
   await main(process.argv.slice(2));
 } catch (error: unknown) {
   const message = error instanceof Error ? error.message : "Unknown error";
-  const safeMessage = message.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").trim();
+  const safeMessage = sanitizeTerminal(message).trim();
   process.stderr.write(`Error: ${safeMessage || "Unknown error"}\n`);
   process.exitCode = 1;
 }

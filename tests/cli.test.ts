@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -76,4 +76,31 @@ test("invalid fixture schema exits nonzero with a concise validation error", asy
   assert.equal(result.stdout, "");
   assert.match(result.stderr, /^Error: Invalid fixture:/);
   assert.equal(result.stderr.trim().split("\n").length, 1);
+});
+
+test("unknown commands cannot inject terminal controls or forged lines", () => {
+  const result = spawnSync(process.execPath, [cli.pathname, "bad\u001b[2J\nFORGED"], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.doesNotMatch(result.stderr, /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+  assert.match(result.stderr, /bad\\u001b\[2J\\u000aFORGED/);
+  assert.equal(result.stderr.trim().split("\n").length, 1);
+});
+
+test("audit paths from control-character working directories are terminal-safe", async () => {
+  const root = await mkdtemp(join(tmpdir(), "astra-crew-cli-"));
+  const unsafeCwd = join(root, "red\u001b[31mroom");
+  await mkdir(unsafeCwd);
+
+  const result = spawnSync(process.execPath, [cli.pathname, "demo"], {
+    cwd: unsafeCwd,
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0);
+  assert.doesNotMatch(result.stdout, /[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+  assert.match(result.stdout, /Audit: .*red\\u001b\[31mroom/);
 });

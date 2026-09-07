@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 
 export const AGENTS = [
@@ -118,7 +118,7 @@ export function validateFixture(value: unknown): asserts value is ReplayFixture 
   }
 }
 
-function sanitizeDisplay(value: string): string {
+export function sanitizeTerminal(value: string): string {
   return value.replace(/[\u0000-\u001f\u007f-\u009f]/g, (character) =>
     `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`
   );
@@ -137,9 +137,9 @@ function atOffset(observedAt: string, seconds: number): string {
 export function runSimulation(fixture: ReplayFixture): SimulationResult {
   validateFixture(fixture);
   const runId = createHash("sha256").update(stableFixture(fixture)).digest("hex").slice(0, 16);
-  const displayId = sanitizeDisplay(fixture.id);
-  const displayMarket = sanitizeDisplay(fixture.market);
-  const displayRiskFlags = fixture.riskFlags.map(sanitizeDisplay);
+  const displayId = sanitizeTerminal(fixture.id);
+  const displayMarket = sanitizeTerminal(fixture.market);
+  const displayRiskFlags = fixture.riskFlags.map(sanitizeTerminal);
   const unsafe: string[] = [];
   if (!fixture.dataComplete) unsafe.push("incomplete data");
   if (fixture.price <= 0) unsafe.push("invalid reference price");
@@ -202,6 +202,9 @@ export async function writeJsonlLog(result: SimulationResult, directory = "runs"
     throw new Error("Audit log path must remain inside the audit directory");
   }
   await mkdir(auditDirectory, { recursive: true });
+  if (await realpath(auditDirectory) !== auditDirectory) {
+    throw new Error("Audit directory must not contain symlinks");
+  }
   const path = resolvedPath;
   const handoffs = result.agents.map((handoff) => JSON.stringify({
     type: "handoff",
