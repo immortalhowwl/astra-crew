@@ -18,7 +18,7 @@
     "astra-crew": "dist/src/cli.js"
   },
   "files": [
-    "dist",
+    "dist/src",
     "fixtures",
     "docs",
     "assets",

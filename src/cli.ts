@@ -3,14 +3,25 @@ import { access, mkdir, readFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { AGENTS, runSimulation, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
+import { AGENTS, EXECUTION_MODE, runSimulation, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 async function loadFixture(path: string): Promise<ReplayFixture> {
-  const raw: unknown = JSON.parse(await readFile(path, "utf8"));
-  if (typeof raw !== "object" || raw === null) throw new Error("Fixture must be a JSON object");
-  return raw as ReplayFixture;
+  let text: string;
+  try {
+    text = await readFile(path, "utf8");
+  } catch {
+    throw new Error("Unable to read fixture file");
+  }
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text) as unknown;
+  } catch {
+    throw new Error("Fixture is not valid JSON");
+  }
+  validateFixture(raw);
+  return raw;
 }
 
 function formatResult(result: SimulationResult, logPath: string): string {
@@ -70,7 +81,7 @@ async function main(args: string[]): Promise<void> {
         const pkg = JSON.parse(await readFile(resolve(projectRoot, "package.json"), "utf8")) as { dependencies?: Record<string, string> };
         return Object.keys(pkg.dependencies ?? {}).length === 0;
       }],
-      ["execution boundary: paper-only", async () => true]
+      ["execution boundary: paper-only", async () => EXECUTION_MODE === "paper-only"]
     ];
     let passed = 0;
     for (const [label, check] of checks) {
@@ -108,4 +119,11 @@ async function main(args: string[]): Promise<void> {
   process.exitCode = 1;
 }
 
-await main(process.argv.slice(2));
+try {
+  await main(process.argv.slice(2));
+} catch (error: unknown) {
+  const message = error instanceof Error ? error.message : "Unknown error";
+  const safeMessage = message.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").trim();
+  process.stderr.write(`Error: ${safeMessage || "Unknown error"}\n`);
+  process.exitCode = 1;
+}

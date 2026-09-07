@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 const cli = new URL("../src/cli.js", import.meta.url);
@@ -40,4 +43,37 @@ test("doctor checks Node, fixtures, audit directory, dependencies, and paper-onl
   assert.match(output, /PASS zero runtime dependencies/);
   assert.match(output, /PASS execution boundary: paper-only/);
   assert.match(output, /Doctor: 5\/5 checks passed/);
+});
+
+test("malformed JSON exits nonzero with one concise error and no stack trace", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "astra-crew-cli-"));
+  const fixturePath = join(directory, "broken.json");
+  await writeFile(fixturePath, "{not-json", "utf8");
+
+  const result = spawnSync(process.execPath, [cli.pathname, "replay", fixturePath], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /^Error: /);
+  assert.equal(result.stderr.trim().split("\n").length, 1);
+  assert.doesNotMatch(result.stderr, /\n\s+at /);
+});
+
+test("invalid fixture schema exits nonzero with a concise validation error", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "astra-crew-cli-"));
+  const fixturePath = join(directory, "invalid.json");
+  await writeFile(fixturePath, JSON.stringify({ schemaVersion: 1, market: "BTC-USD" }), "utf8");
+
+  const result = spawnSync(process.execPath, [cli.pathname, "replay", fixturePath], {
+    cwd: process.cwd(),
+    encoding: "utf8"
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /^Error: Invalid fixture:/);
+  assert.equal(result.stderr.trim().split("\n").length, 1);
 });

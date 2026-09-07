@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 
 export const AGENTS = [
   { name: "TOKYO", role: "Scout", responsibility: "Frames the replay observation without fetching or executing live trades." },
@@ -14,6 +14,9 @@ export const AGENTS = [
   { name: "PALERMO", role: "Red-team veto gate", responsibility: "Vetoes unsafe, incomplete, contradictory, or out-of-policy signals." },
   { name: "PROFESSOR", role: "Final coordinator / decision", responsibility: "Issues the final approved or rejected paper-trade decision; never executes." }
 ] as const;
+
+export const EXECUTION_MODE = "paper-only" as const;
+const POLICY_VERSION = 2;
 
 export type AgentName = (typeof AGENTS)[number]["name"];
 export type AgentOutcome = "PASS" | "VETO" | "INFO";
@@ -49,7 +52,7 @@ export interface SimulationResult {
   schemaVersion: 1;
   runId: string;
   fixtureId: string;
-  mode: "paper-only";
+  mode: typeof EXECUTION_MODE;
   status: "approved" | "rejected";
   decision: "PASS" | "VETO";
   agents: AgentHandoff[];
@@ -63,8 +66,66 @@ export interface SimulationResult {
   };
 }
 
+function invalid(field: string, requirement: string): never {
+  throw new Error(`Invalid fixture: ${field} ${requirement}`);
+}
+
+function requireBoundedString(value: unknown, field: string): asserts value is string {
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > 128) {
+    invalid(field, "must be a nonempty string of at most 128 characters");
+  }
+}
+
+function requireFiniteNumber(value: unknown, field: string, minimum: number, maximum: number): asserts value is number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < minimum || value > maximum) {
+    invalid(field, `must be a finite number from ${minimum} to ${maximum}`);
+  }
+}
+
+function requireNonnegativeInteger(value: unknown, field: string): asserts value is number {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    invalid(field, "must be a nonnegative safe integer");
+  }
+}
+
+export function validateFixture(value: unknown): asserts value is ReplayFixture {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) invalid("value", "must be a JSON object");
+  const fixture = value as Record<string, unknown>;
+  if (fixture.schemaVersion !== 1) invalid("schemaVersion", "must be exactly 1");
+  requireBoundedString(fixture.id, "id");
+  requireNonnegativeInteger(fixture.seed, "seed");
+  requireBoundedString(fixture.market, "market");
+  requireFiniteNumber(fixture.price, "price", 0, 1_000_000_000_000_000);
+  requireFiniteNumber(fixture.momentum, "momentum", 0, 1);
+  requireFiniteNumber(fixture.socialSignal, "socialSignal", 0, 1);
+  requireNonnegativeInteger(fixture.socialSampleSize, "socialSampleSize");
+  if (typeof fixture.dataComplete !== "boolean") invalid("dataComplete", "must be a boolean");
+  requireFiniteNumber(fixture.liquidityUsd, "liquidityUsd", 0, 1_000_000_000_000_000);
+  requireFiniteNumber(fixture.estimatedSlippageBps, "estimatedSlippageBps", 0, 1_000_000);
+  requireFiniteNumber(fixture.requestedPositionPct, "requestedPositionPct", 0, 100);
+  requireFiniteNumber(fixture.maxPositionPct, "maxPositionPct", 0, 100);
+  if (!Array.isArray(fixture.riskFlags) || fixture.riskFlags.length > 100) {
+    invalid("riskFlags", "must be an array of at most 100 strings");
+  }
+  fixture.riskFlags.forEach((flag) => requireBoundedString(flag, "riskFlags entry"));
+  if (typeof fixture.observedAt !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(fixture.observedAt)) {
+    invalid("observedAt", "must be an ISO-8601 timestamp");
+  }
+  const epoch = Date.parse(fixture.observedAt);
+  if (!Number.isFinite(epoch) || new Date(epoch).toISOString() !== fixture.observedAt) {
+    invalid("observedAt", "must be an ISO-8601 timestamp");
+  }
+}
+
+function sanitizeDisplay(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f-\u009f]/g, (character) =>
+    `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`
+  );
+}
+
 function stableFixture(fixture: ReplayFixture): string {
-  return JSON.stringify({ ...fixture, riskFlags: [...fixture.riskFlags].sort() });
+  return JSON.stringify({ policyVersion: POLICY_VERSION, ...fixture, riskFlags: [...fixture.riskFlags].sort() });
 }
 
 function atOffset(observedAt: string, seconds: number): string {
@@ -74,9 +135,11 @@ function atOffset(observedAt: string, seconds: number): string {
 }
 
 export function runSimulation(fixture: ReplayFixture): SimulationResult {
-  if (fixture.schemaVersion !== 1) throw new Error("Unsupported fixture schemaVersion");
-  if (!fixture.id.trim() || !fixture.market.trim()) throw new Error("Fixture id and market are required");
+  validateFixture(fixture);
   const runId = createHash("sha256").update(stableFixture(fixture)).digest("hex").slice(0, 16);
+  const displayId = sanitizeDisplay(fixture.id);
+  const displayMarket = sanitizeDisplay(fixture.market);
+  const displayRiskFlags = fixture.riskFlags.map(sanitizeDisplay);
   const unsafe: string[] = [];
   if (!fixture.dataComplete) unsafe.push("incomplete data");
   if (fixture.price <= 0) unsafe.push("invalid reference price");
@@ -85,14 +148,14 @@ export function runSimulation(fixture: ReplayFixture): SimulationResult {
   if (fixture.liquidityUsd < 1_000_000) unsafe.push("insufficient liquidity");
   if (fixture.estimatedSlippageBps > 25) unsafe.push("slippage above limit");
   if (fixture.requestedPositionPct <= 0 || fixture.requestedPositionPct > fixture.maxPositionPct) unsafe.push("position outside limit");
-  unsafe.push(...fixture.riskFlags.map((flag) => `risk flag: ${flag}`));
+  unsafe.push(...displayRiskFlags.map((flag) => `risk flag: ${flag}`));
   const positionPct = Math.max(0, Math.min(fixture.requestedPositionPct, fixture.maxPositionPct));
   const entries: Array<[AgentName, AgentOutcome, string]> = [
-    ["TOKYO", "INFO", `Observed ${fixture.market} at ${fixture.price.toFixed(2)} from bundled replay data.`],
+    ["TOKYO", "INFO", `Observed ${displayMarket} at ${fixture.price.toFixed(2)} from bundled replay data.`],
     ["BERLIN", "INFO", "Criteria locked: momentum >= 0.55, social quality >= 0.50/100 samples, liquidity >= $1m, slippage <= 25 bps."],
     ["RIO", fixture.momentum >= 0.55 ? "PASS" : "VETO", `Momentum score ${fixture.momentum.toFixed(2)}.`],
     ["DENVER", fixture.socialSignal >= 0.5 && fixture.socialSampleSize >= 100 ? "PASS" : "VETO", `Social score ${fixture.socialSignal.toFixed(2)} across ${fixture.socialSampleSize} fixture samples.`],
-    ["LISBON", fixture.dataComplete && fixture.price > 0 ? "PASS" : "VETO", fixture.dataComplete ? "Required replay fields and prior handoffs validated." : "Replay fixture is incomplete."],
+    ["LISBON", fixture.dataComplete ? "PASS" : "VETO", fixture.dataComplete ? "Fixture schema validated; ordered handoff continuity is structurally enforced." : "Replay fixture is incomplete."],
     ["STOCKHOLM", fixture.liquidityUsd >= 1_000_000 && fixture.estimatedSlippageBps <= 25 && fixture.requestedPositionPct > 0 && fixture.requestedPositionPct <= fixture.maxPositionPct ? "PASS" : "VETO", `Liquidity $${fixture.liquidityUsd.toFixed(0)}; slippage ${fixture.estimatedSlippageBps} bps; simulated size ${positionPct.toFixed(2)}%.`],
     ["NAIROBI", "INFO", unsafe.length === 0 ? "Brief: technical, social, data, and sizing checks cleared." : `Brief: ${unsafe.length} unresolved concern(s).`],
     ["HELSINKI", "INFO", `Audit trace ${runId} prepared; execution remains disabled.`],
@@ -111,15 +174,15 @@ export function runSimulation(fixture: ReplayFixture): SimulationResult {
   return {
     schemaVersion: 1,
     runId,
-    fixtureId: fixture.id,
-    mode: "paper-only",
+    fixtureId: displayId,
+    mode: EXECUTION_MODE,
     status: approved ? "approved" : "rejected",
     decision: approved ? "PASS" : "VETO",
     agents,
     paperTrade: {
       executed: false,
       side: approved ? "BUY" : "NONE",
-      market: fixture.market,
+      market: displayMarket,
       referencePrice: fixture.price,
       positionPct: approved ? positionPct : 0,
       rationale: approved ? "Approved hypothetical entry; execution intentionally disabled." : "Rejected by safety gate."
@@ -129,8 +192,17 @@ export function runSimulation(fixture: ReplayFixture): SimulationResult {
 
 /** Writes an immutable JSONL trace. Replaying identical input reuses the identical trace. */
 export async function writeJsonlLog(result: SimulationResult, directory = "runs"): Promise<string> {
-  await mkdir(directory, { recursive: true });
-  const path = join(directory, `${result.runId}.jsonl`);
+  if (!/^[0-9a-f]{16}$/.test(result.runId)) {
+    throw new Error("runId must be lowercase 16-character hex");
+  }
+  const auditDirectory = resolve(directory);
+  const resolvedPath = resolve(auditDirectory, `${result.runId}.jsonl`);
+  const relativePath = relative(auditDirectory, resolvedPath);
+  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
+    throw new Error("Audit log path must remain inside the audit directory");
+  }
+  await mkdir(auditDirectory, { recursive: true });
+  const path = resolvedPath;
   const handoffs = result.agents.map((handoff) => JSON.stringify({
     type: "handoff",
     runId: result.runId,

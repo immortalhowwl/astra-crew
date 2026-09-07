@@ -41,16 +41,16 @@ Safety: simulation only; no wallet, signing, private keys, or live execution.
 [2026-01-15T12:00:01.000Z] BERLIN     INFO :: Planner / criteria — Criteria locked: momentum >= 0.55, social quality >= 0.50/100 samples, liquidity >= $1m, slippage <= 25 bps.
 [2026-01-15T12:00:02.000Z] RIO        PASS :: Technical / chart analysis — Momentum score 0.72.
 [2026-01-15T12:00:03.000Z] DENVER     PASS :: Social-signal quality — Social score 0.66 across 250 fixture samples.
-[2026-01-15T12:00:04.000Z] LISBON     PASS :: Data / handoff validation — Required replay fields and prior handoffs validated.
+[2026-01-15T12:00:04.000Z] LISBON     PASS :: Data / handoff validation — Fixture schema validated; ordered handoff continuity is structurally enforced.
 [2026-01-15T12:00:05.000Z] STOCKHOLM  PASS :: Liquidity / slippage / position sizing — Liquidity $5000000; slippage 8 bps; simulated size 1.50%.
 [2026-01-15T12:00:06.000Z] NAIROBI    INFO :: Signal brief — Brief: technical, social, data, and sizing checks cleared.
-[2026-01-15T12:00:07.000Z] HELSINKI   INFO :: Append-only audit / logistics — Audit trace c4711b4dbdaa5c4c prepared; execution remains disabled.
+[2026-01-15T12:00:07.000Z] HELSINKI   INFO :: Append-only audit / logistics — Audit trace 9d64be648f8a52d3 prepared; execution remains disabled.
 [2026-01-15T12:00:08.000Z] PALERMO    PASS :: Red-team veto gate — Red-team gate found no policy violation.
 [2026-01-15T12:00:09.000Z] PROFESSOR  PASS :: Final coordinator / decision — Approved for paper simulation only; no order was sent.
 
 FINAL: PASS — approved (paper-only; executed=false)
 Paper trade: BUY 1.50% BTC-USD @ 100000.00
-Audit: runs/c4711b4dbdaa5c4c.jsonl
+Audit: runs/9d64be648f8a52d3.jsonl
 ```
 
 ## Commands
@@ -103,7 +103,7 @@ npm run build
 node dist/src/cli.js replay my-replay.json
 ```
 
-Every input is local JSON. ASTRA CREW does not fetch market data. Identical input produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
+Every input is local JSON. ASTRA CREW does not fetch market data. Fixtures are schema-validated before the first handoff, and terminal control characters are escaped. Identical input under the same policy version produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
 
 A run is vetoed when any configured boundary fails, including:
 
