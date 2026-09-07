@@ -11,5 +11,5 @@ main{grid-template-rows:minmax(700px,calc(100vh - 256px)) 150px}.route{height:ca
 @media(max-width:720px){.masthead{grid-template-columns:1fr auto;gap:10px}.buy-cta{padding:8px;font-size:8px}.route-panel{height:916px}.route{height:430px}.target-links{height:36px}footer{height:42px}.social-links{width:100%;justify-content:space-between;gap:8px}.social-links a{font-size:8px}footer>#updated{display:none}}
 
 /* Keep route outcomes inside their cards at compressed viewport heights. */
-.agent{padding:7px 12px 20px}.agent small{position:absolute;left:12px;bottom:7px;display:block;line-height:1}
+.agent{padding:7px 12px 20px}.agent span{display:block;line-height:1}.agent strong{line-height:.9;margin-top:5px}.agent small{position:absolute;left:12px;bottom:7px;display:block;line-height:1}
 @media(max-width:720px){.agent{padding:7px 8px 19px}.agent small{left:8px;bottom:7px}}
