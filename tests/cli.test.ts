@@ -35,6 +35,12 @@ test("agents lists every role exactly once", () => {
   for (const name of expected) assert.equal(output.match(new RegExp(`^\\d+\\. ${name} —`, "gm"))?.length, 1);
 });
 
+test("help advertises the live read-only Desk command", () => {
+  const output = execFileSync(process.execPath, [cli.pathname, "--help"], { cwd: process.cwd(), encoding: "utf8" });
+  assert.match(output, /gptheist desk/);
+  assert.match(output, /read-only Robinhood Chain/);
+});
+
 test("doctor checks Node, fixtures, audit directory, dependencies, and paper-only mode", () => {
   const output = execFileSync(process.execPath, [cli.pathname, "doctor"], { cwd: process.cwd(), encoding: "utf8" });
   assert.match(output, /PASS Node\.js >= 18/);

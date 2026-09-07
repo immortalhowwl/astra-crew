@@ -16,9 +16,13 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-f4efe6">
 </p>
 
-GPTHEIST is a deterministic, inspectable market-replay CLI inspired by the ten-agent operating system described by [@immortalhowwl](https://x.com/immortalhowwl). Each specialist owns one gate. Every handoff is visible. Palermo can veto the run. Professor returns one final decision.
+GPTHEIST is a read-only Robinhood Chain launch desk plus a deterministic market-replay CLI inspired by the ten-agent operating system described by [@immortalhowwl](https://x.com/immortalhowwl). Every Pons factory launch crosses ten visible evidence stages. Palermo vetoes unsupported action; Professor never sends an order.
 
-It is intentionally **paper-only**: no wallet connection, private key, signing, RPC, brokerage integration, or live order execution exists in this repository.
+The live Desk reads public chain data only. It has **no wallet connection, private key, signing, brokerage integration, or order execution path**. Raw launch events do not prove liquidity, price quality, slippage, or social quality, so the live trade gate fails closed.
+
+<p align="center">
+  <img src="./assets/desk.png" alt="GPTHEIST Desk showing live Robinhood Chain launches and a Palermo veto" width="100%">
+</p>
 
 ## Sixty seconds
 
@@ -28,10 +32,18 @@ Requires Node.js 18 or newer.
 git clone https://github.com/immortalhowwl/gptheist.git
 cd gptheist
 npm install
+npm run desk
+```
+
+Open `http://127.0.0.1:4173`. The Desk reads recent `TokenLaunched` events from the verified Pons v2 factory on Robinhood Chain (chain ID `4663`). Double-click an intercept to open its transaction on Blockscout.
+
+For the fully offline deterministic replay instead:
+
+```bash
 npm run demo
 ```
 
-The demo is fully offline and uses the bundled `fixtures/success.json` replay.
+The replay uses the bundled `fixtures/success.json`:
 
 ```text
 GPTHEIST — PAPER-TRADING REPLAY
@@ -57,6 +69,7 @@ Audit: runs/b8d3603a21d62139.jsonl
 
 | Command | What it does |
 |---|---|
+| `npm run desk` | Builds and opens the read-only live launch desk on port `4173` |
 | `npm run demo` | Builds and runs the bundled safe replay |
 | `node dist/src/cli.js replay fixtures/veto.json` | Replays any local fixture and writes an audit log |
 | `node dist/src/cli.js agents` | Lists all ten roles and boundaries |
@@ -66,6 +79,7 @@ Audit: runs/b8d3603a21d62139.jsonl
 After `npm link`, use the shorter binary form:
 
 ```bash
+gptheist desk
 gptheist demo
 gptheist replay fixtures/veto.json
 gptheist agents
@@ -103,7 +117,7 @@ npm run build
 node dist/src/cli.js replay my-replay.json
 ```
 
-Every input is local JSON. GPTHEIST does not fetch market data. Fixtures are schema-validated before the first handoff, and terminal control characters are escaped. Identical input under the same policy version produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
+Every replay input is local JSON; replay mode does not fetch market data. Fixtures are schema-validated before the first handoff, and terminal control characters are escaped. Identical input under the same policy version produces the same run ID, handoffs, timestamps, and final decision. Audit records are written to `runs/<run-id>.jsonl`. Existing records are immutable: the CLI refuses to overwrite a run ID with different content.
 
 A run is vetoed when any configured boundary fails, including:
 
@@ -122,8 +136,10 @@ These thresholds are demonstration rules, not trading advice or validated predic
 - not ten live LLM instances;
 - not evidence that a historical trade happened;
 - not a backtesting engine or profit calculator;
-- not connected to Robinhood, an exchange, a wallet, or a blockchain;
+- not a wallet, exchange, broker, or execution system;
 - not able to place, sign, route, or settle orders.
+
+The Desk is connected only to public, read-only Robinhood Chain RPC endpoints. It verifies factory event provenance, not market quality. **Every live launch remains VETOED** until price, liquidity, slippage, and social evidence exist.
 
 It is an open, deterministic reference implementation of the **ownership → handoff → veto → final decision** pattern. Use it to inspect and extend the coordination logic before connecting any external system.
 

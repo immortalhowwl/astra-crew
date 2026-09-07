@@ -4,6 +4,7 @@ import { constants } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { AGENTS, EXECUTION_MODE, ensureSafeAuditDirectory, runSimulation, sanitizeTerminal, validateFixture, writeJsonlLog, type ReplayFixture, type SimulationResult } from "./simulation.js";
+import { startDeskServer } from "./server.js";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -64,6 +65,23 @@ async function main(args: string[]): Promise<void> {
     });
     return;
   }
+  if (command === "desk") {
+    const option = (name: string): string | undefined => {
+      const index = args.indexOf(name);
+      return index >= 0 ? args[index + 1] : undefined;
+    };
+    const host = option("--host") ?? "127.0.0.1";
+    const portText = option("--port") ?? "4173";
+    const port = Number(portText);
+    if (!Number.isSafeInteger(port) || port < 0 || port > 65_535) throw new Error("--port must be an integer from 0 to 65535");
+    const rpcUrl = process.env.RPC_URL;
+    const server = await startDeskServer(rpcUrl ? { host, port, rpcUrl } : { host, port });
+    const address = server.address();
+    const boundPort = typeof address === "object" && address !== null ? address.port : port;
+    process.stdout.write(`GPTHEIST DESK — read-only Robinhood Chain watch\nhttp://${sanitizeTerminal(host)}:${boundPort}\nNo wallet. No signing. No live execution.\n`);
+    await new Promise<void>(() => undefined);
+    return;
+  }
   if (command === "doctor") {
     const checks: Array<[string, () => Promise<boolean>]> = [
       ["Node.js >= 18", async () => Number(process.versions.node.split(".")[0]) >= 18],
@@ -108,9 +126,11 @@ async function main(args: string[]): Promise<void> {
       "  gptheist demo",
       "  gptheist replay <fixture.json>",
       "  gptheist agents",
+      "  gptheist desk [--host 127.0.0.1] [--port 4173]",
       "  gptheist doctor",
       "",
-      "Paper-only. No wallet access. No live execution.",
+      "Desk: read-only Robinhood Chain launch feed; no wallet or execution.",
+      "Replay: deterministic paper-only simulation.",
       ""
     ].join("\n"));
     return;

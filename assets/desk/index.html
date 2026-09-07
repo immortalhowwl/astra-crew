@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="GPTHEIST Desk — a read-only ten-agent observation room for Pons launches on Robinhood Chain.">
+  <title>GPTHEIST DESK</title>
+  <link rel="stylesheet" href="/desk.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="masthead">
+    <div class="brand"><span>GPT</span>HEIST <sup>DESK</sup></div>
+    <div class="chain-lock"><i id="pulse"></i><span>ROBINHOOD CHAIN</span><b id="block">CONNECTING</b></div>
+    <div class="safety">READ-ONLY<br><b>NO WALLET · NO EXECUTION</b></div>
+  </header>
+
+  <main>
+    <section class="briefing">
+      <p class="eyebrow">OPERATION / LIVE FACTORY WATCH</p>
+      <h1>TEN CHECKS.<br><em>ONE VERDICT.</em></h1>
+      <p class="lede">Every new Pons launch crosses the room. Each role adds evidence. Palermo can kill the route. Professor never sends an order.</p>
+      <div class="metrics" aria-label="Live metrics">
+        <div><span>WINDOW</span><strong id="launch-count">—</strong><small>launches</small></div>
+        <div><span>VERIFIED</span><strong id="verified-count">—</strong><small>onchain</small></div>
+        <div><span>ACTION</span><strong id="veto-count">—</strong><small>vetoed</small></div>
+      </div>
+    </section>
+
+    <section class="route-panel" aria-label="Agent decision route">
+      <div class="panel-head"><span>DECISION ROUTE</span><b id="selected-token">AWAITING TARGET</b></div>
+      <div class="route" id="route"></div>
+      <div class="decision-card" id="decision-card">
+        <div class="crosshair" aria-hidden="true"></div>
+        <span>PROFESSOR / FINAL</span>
+        <strong id="decision">STANDBY</strong>
+        <p id="decision-copy">Waiting for a verified factory event.</p>
+      </div>
+    </section>
+
+    <aside class="feed-panel">
+      <div class="panel-head"><span>LIVE INTERCEPTS</span><b id="sync">SYNCING</b></div>
+      <div class="feed" id="feed" aria-live="polite"></div>
+    </aside>
+
+    <section class="trace-panel">
+      <div class="panel-head"><span>CHAIN OF CUSTODY</span><b id="trace-id">NO TRACE</b></div>
+      <ol id="trace" class="trace"></ol>
+    </section>
+  </main>
+
+  <footer>
+    <span>FACTORY <a href="https://robinhoodchain.blockscout.com/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e" target="_blank" rel="noreferrer">0x7eD5…EC7e ↗</a></span>
+    <span id="updated">NOT YET SYNCED</span>
+    <span>OBSERVATION POLICY v1</span>
+  </footer>
+  <script src="/desk.js" defer></script>
+</body>
+</html>

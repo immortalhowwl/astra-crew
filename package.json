@@ -30,6 +30,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "demo": "npm run build --silent && node dist/src/cli.js demo",
+    "desk": "npm run build --silent && node dist/src/cli.js desk",
     "prepare": "npm run build"
   },
   "engines": {
