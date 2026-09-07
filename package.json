@@ -1,0 +1,42 @@
+{
+  "name": "astra-crew",
+  "version": "1.0.0",
+  "description": "Ten agents pass one market decision forward. Any one of them can kill it.",
+  "author": "immortalhowwl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/immortalhowwl/astra-crew.git"
+  },
+  "homepage": "https://github.com/immortalhowwl/astra-crew#readme",
+  "bugs": {
+    "url": "https://github.com/immortalhowwl/astra-crew/issues"
+  },
+  "keywords": ["multi-agent", "paper-trading", "market-replay", "risk", "cli"],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "astra-crew": "dist/src/cli.js"
+  },
+  "files": [
+    "dist",
+    "fixtures",
+    "docs",
+    "assets",
+    "README.md",
+    "LICENSE",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "demo": "npm run build --silent && node dist/src/cli.js demo",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "btc-breakout-safe",
+  "seed": 42,
+  "observedAt": "2026-01-15T12:00:00.000Z",
+  "market": "BTC-USD",
+  "price": 100000,
+  "momentum": 0.72,
+  "socialSignal": 0.66,
+  "socialSampleSize": 250,
+  "dataComplete": true,
+  "liquidityUsd": 5000000,
+  "estimatedSlippageBps": 8,
+  "requestedPositionPct": 1.5,
+  "maxPositionPct": 2,
+  "riskFlags": []
+}
