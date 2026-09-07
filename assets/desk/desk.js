@@ -7,6 +7,8 @@ let latestSnapshot = null;
 let activeFilter = "ALL";
 const short = (value, size=6) => `${value.slice(0,size+2)}…${value.slice(-4)}`;
 const explorer = (hash) => `https://robinhoodchain.blockscout.com/tx/${hash}`;
+const tokenExplorer = (address) => `https://robinhoodchain.blockscout.com/address/${address}`;
+const pons = (address) => `https://www.ponsfamily.com/launchpad/${address}`;
 const pct = (bps) => `${(bps / 100).toFixed(2)}%`;
 
 function buildRoute(){
@@ -24,12 +26,13 @@ function selectLaunch(launch){
   selected=launch;
   document.querySelectorAll(".intercept").forEach(el=>el.classList.toggle("selected",el.dataset.tx===launch.transactionHash));
   $("selected-token").textContent=short(launch.token,8);$("trace-id").textContent=short(launch.transactionHash,8);
+  $("pons-link").href=pons(launch.token);$("token-link").href=tokenExplorer(launch.token);$("tx-link").href=explorer(launch.transactionHash);
   const card=$("decision-card");card.className=`decision-card ${launch.verdict.toLowerCase()}`;$("decision").textContent=launch.verdict;$("decision-copy").textContent=launch.handoffs[9].message;
   const market=launch.market;
   $("score").textContent=String(launch.assessment.score).padStart(2,"0");
   $("progress").textContent=market.status==="VERIFIED"?pct(market.progressBps):"UNKNOWN";
   $("phase").textContent=market.status==="VERIFIED"?market.phase:market.status;
-  $("taxes").textContent=market.status==="VERIFIED"?`${pct(market.creatorTaxBps)} / ${pct(market.openingTaxBps)}`:"—";
+  $("taxes").textContent=market.status==="VERIFIED"?`${pct(market.creatorTaxBps)} / ${pct(market.currentSnipeTaxBps)}`:"—";
   const assessment=launch.assessment;
   const evidence=[];
   if(assessment.blockers.length)evidence.push(`BLOCKERS — ${assessment.blockers.join(" · ")}`);
@@ -43,7 +46,7 @@ function renderFeed(snapshot){
   const feed=$("feed");feed.replaceChildren();
   const launches=activeFilter==="ALL"?snapshot.launches:snapshot.launches.filter(x=>x.verdict===activeFilter);
   if(!launches.length){const empty=document.createElement("p");empty.className="empty";empty.textContent=`No ${activeFilter.toLowerCase()} launches in the current block window.`;feed.append(empty);return}
-  launches.forEach((launch,i)=>{const button=document.createElement("button");button.type="button";button.className="intercept";button.dataset.tx=launch.transactionHash;const n=document.createElement("span");n.className="ordinal";n.textContent=String(i+1).padStart(2,"0");const body=document.createElement("div");const title=document.createElement("strong");title.textContent=short(launch.token,8);const meta=document.createElement("small");const progress=launch.market.status==="VERIFIED"?pct(launch.market.progressBps):"UNKNOWN";meta.textContent=`${launch.assessment.score}/100 · ${progress} CURVE · ${launch.pairLabel}`;body.append(title,meta);const badge=document.createElement("span");badge.className=`badge ${launch.verdict.toLowerCase()}`;badge.textContent=launch.verdict;button.append(n,body,badge);button.addEventListener("click",()=>selectLaunch(launch));button.addEventListener("dblclick",()=>window.open(explorer(launch.transactionHash),"_blank","noopener"));feed.append(button)});
+  launches.forEach((launch,i)=>{const button=document.createElement("button");button.type="button";button.className="intercept";button.dataset.tx=launch.transactionHash;const n=document.createElement("span");n.className="ordinal";n.textContent=String(i+1).padStart(2,"0");const body=document.createElement("div");const title=document.createElement("strong");title.textContent=short(launch.token,8);const meta=document.createElement("small");const progress=launch.market.status==="VERIFIED"?pct(launch.market.progressBps):"UNKNOWN";meta.textContent=`${launch.assessment.score}/100 · ${progress} CURVE · ${launch.pairLabel}`;body.append(title,meta);const badge=document.createElement("span");badge.className=`badge ${launch.verdict.toLowerCase()}`;badge.textContent=launch.verdict;button.append(n,body,badge);button.addEventListener("click",()=>selectLaunch(launch));feed.append(button)});
   const stillPresent=selected&&launches.find(x=>x.transactionHash===selected.transactionHash);selectLaunch(stillPresent||launches[0]);
 }
 

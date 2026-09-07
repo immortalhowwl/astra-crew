@@ -20,7 +20,7 @@ export interface PonsMarketReads {
   factoryRecord: unknown;
   reserves: unknown;
   realQuoteReserve: unknown;
-  openingTaxBps: unknown;
+  currentSnipeTaxBps: unknown;
 }
 
 export interface VerifiedPonsMarketState {
@@ -34,7 +34,7 @@ export interface VerifiedPonsMarketState {
   realQuoteReserve: string;
   graduationThreshold: string;
   progressBps: number;
-  openingTaxBps: number;
+  currentSnipeTaxBps: number;
 }
 
 export interface RejectedPonsMarketState {
@@ -125,14 +125,14 @@ export function assessPonsLaunch(pairLabel: "ETH" | "OTHER", market: PonsMarketS
     blockers.push(`Creator tax above 5% (${(market.creatorTaxBps / 100).toFixed(2)}%)`);
   }
 
-  if (market.openingTaxBps <= 200) {
+  if (market.currentSnipeTaxBps <= 200) {
     score += 10;
-    reasons.push("Opening tax at or below 2% (+10)");
-  } else if (market.openingTaxBps <= 500) {
+    reasons.push("Current snipe tax at or below 2% (+10)");
+  } else if (market.currentSnipeTaxBps <= 500) {
     score += 5;
-    reasons.push("Opening tax at or below 5% (+5)");
+    reasons.push("Current snipe tax at or below 5% (+5)");
   } else {
-    blockers.push(`Opening tax above 5% (${(market.openingTaxBps / 100).toFixed(2)}%)`);
+    blockers.push(`Current snipe tax above 5% (${(market.currentSnipeTaxBps / 100).toFixed(2)}%)`);
   }
 
   const progressPoints = market.progressBps >= 2500 ? 25 : market.progressBps >= 1000 ? 20 :
@@ -158,7 +158,7 @@ export function decodePonsMarketState(launch: LiveLaunch, reads: PonsMarketReads
   const record = words(reads.factoryRecord, 15);
   const reserves = words(reads.reserves, 2);
   const real = words(reads.realQuoteReserve, 1);
-  const opening = words(reads.openingTaxBps, 1);
+  const opening = words(reads.currentSnipeTaxBps, 1);
   if (!record || !reserves || !real || !opening) return reject("malformed Pons market response");
 
   const token = address(record[0]);
@@ -174,11 +174,11 @@ export function decodePonsMarketState(launch: LiveLaunch, reads: PonsMarketReads
   const quoteReserve = uint(reserves[0]);
   const tokenReserve = uint(reserves[1]);
   const realQuoteReserve = uint(real[0]);
-  const openingTaxBps = uint(opening[0]);
+  const currentSnipeTaxBps = uint(opening[0]);
 
   if (!token || !curve || !deployer || !creatorFeeRecipient || !pairToken || graduationThreshold === null ||
       creatorTaxBps === null || buybackEnabled === null || phaseNumber === null || exists === null ||
-      quoteReserve === null || tokenReserve === null || realQuoteReserve === null || openingTaxBps === null) {
+      quoteReserve === null || tokenReserve === null || realQuoteReserve === null || currentSnipeTaxBps === null) {
     return reject("invalid Pons market values");
   }
   if (!exists || token !== launch.token || curve !== launch.curve || deployer !== launch.deployer ||
@@ -186,7 +186,7 @@ export function decodePonsMarketState(launch: LiveLaunch, reads: PonsMarketReads
     return reject("factory record contradicts launch event");
   }
   const phase = PHASES[Number(phaseNumber)];
-  if (!phase || creatorTaxBps > 10_000n || openingTaxBps > 10_000n || quoteReserve === 0n || tokenReserve === 0n) {
+  if (!phase || creatorTaxBps > 10_000n || currentSnipeTaxBps > 10_000n || quoteReserve === 0n || tokenReserve === 0n) {
     return reject("Pons market values are outside protocol bounds");
   }
   const progress = graduationThreshold === 0n ? 0n : (realQuoteReserve * 10_000n) / graduationThreshold;
@@ -201,7 +201,7 @@ export function decodePonsMarketState(launch: LiveLaunch, reads: PonsMarketReads
     realQuoteReserve: realQuoteReserve.toString(),
     graduationThreshold: graduationThreshold.toString(),
     progressBps: Number(progress > 10_000n ? 10_000n : progress),
-    openingTaxBps: Number(openingTaxBps)
+    currentSnipeTaxBps: Number(currentSnipeTaxBps)
   };
 }
 
@@ -246,7 +246,7 @@ export async function readPonsMarketStates(
         factoryRecord: group[0]?.returnData,
         reserves: group[1]?.returnData,
         realQuoteReserve: group[2]?.returnData,
-        openingTaxBps: group[3]?.returnData
+        currentSnipeTaxBps: group[3]?.returnData
       });
     });
   } catch (error: unknown) {

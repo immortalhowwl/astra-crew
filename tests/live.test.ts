@@ -25,11 +25,13 @@ test("scores verified ETH launches for watchlisting with inspectable reasons", (
     realQuoteReserve: "2100000000000000000",
     graduationThreshold: "4200000000000000000",
     progressBps: 5000,
-    openingTaxBps: 0
+    currentSnipeTaxBps: 0
   });
   assert.equal(assessment.verdict, "WATCH");
   assert.equal(assessment.score, 100);
   assert.match(assessment.reasons.join(" "), /verified factory provenance/i);
+  assert.match(assessment.reasons.join(" "), /current snipe tax/i);
+  assert.doesNotMatch(assessment.reasons.join(" "), /opening tax/i);
   assert.match(assessment.unknowns.join(" "), /social/i);
 });
 
@@ -45,7 +47,7 @@ test("vetoes unsupported pairs and unavailable evidence with explicit blockers",
     realQuoteReserve: "0",
     graduationThreshold: "10",
     progressBps: 0,
-    openingTaxBps: 0
+    currentSnipeTaxBps: 0
   });
   assert.equal(unsupported.verdict, "VETO");
   assert.match(unsupported.blockers.join(" "), /unsupported pair/i);
@@ -83,7 +85,7 @@ test("decodes pinned Pons factory and curve reads into verified market evidence"
     factoryRecord,
     reserves: `0x${uintWord("1680000000000000000")}${uintWord("970000000000000000000000000")}`,
     realQuoteReserve: `0x${uintWord("2100000000000000000")}`,
-    openingTaxBps: `0x${word("0x0")}`
+    currentSnipeTaxBps: `0x${word("0x0")}`
   }), {
     status: "VERIFIED",
     creatorFeeRecipient: "0x4444444444444444444444444444444444444444",
@@ -95,7 +97,7 @@ test("decodes pinned Pons factory and curve reads into verified market evidence"
     realQuoteReserve: "2100000000000000000",
     graduationThreshold: "4200000000000000000",
     progressBps: 5000,
-    openingTaxBps: 0
+    currentSnipeTaxBps: 0
   });
 });
 

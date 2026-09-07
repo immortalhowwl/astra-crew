@@ -105,7 +105,7 @@ function liveHandoffs(launch: LiveLaunch, market: PonsMarketState, assessment: P
     ["INFO", `Detected Pons v2 launch in block ${launch.blockNumber}.`],
     ["INFO", "Policy locked: observe verified factory events; never sign or execute."],
     [verified ? "PASS" : "VETO", verified
-      ? `Curve state verified: ${market.progressBps / 100}% to graduation; opening tax ${market.openingTaxBps / 100}%.`
+      ? `Curve state verified: ${market.progressBps / 100}% to graduation; current snipe tax ${market.currentSnipeTaxBps / 100}%.`
       : `Market state unavailable: ${market.reason}`],
     ["INFO", "Social evidence not claimed by this read-only feed."],
     [verified ? "PASS" : "VETO", verified

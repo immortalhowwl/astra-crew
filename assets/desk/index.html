@@ -12,6 +12,7 @@
   <header class="masthead">
     <div class="brand"><span>GPT</span>HEIST <sup>DESK</sup></div>
     <div class="chain-lock"><i id="pulse"></i><span>ROBINHOOD CHAIN</span><b id="block">CONNECTING</b></div>
+    <button id="get-token" class="buy-cta" type="button" disabled aria-disabled="true">GET $GPTHEIST · SOON</button>
     <div class="safety">READ-ONLY<br><b>NO WALLET · NO EXECUTION</b></div>
   </header>
 
@@ -29,6 +30,11 @@
 
     <section class="route-panel" aria-label="Agent decision route">
       <div class="panel-head"><span>DECISION ROUTE</span><b id="selected-token">AWAITING TARGET</b></div>
+      <nav class="target-links" aria-label="Selected launch links">
+        <a id="pons-link" href="https://www.ponsfamily.com/launchpad/" target="_blank" rel="noopener noreferrer">PONS ↗</a>
+        <a id="token-link" href="https://robinhoodchain.blockscout.com/" target="_blank" rel="noopener noreferrer">TOKEN ↗</a>
+        <a id="tx-link" href="https://robinhoodchain.blockscout.com/" target="_blank" rel="noopener noreferrer">TX ↗</a>
+      </nav>
       <div class="route" id="route"></div>
       <div class="decision-card" id="decision-card">
         <div class="crosshair" aria-hidden="true"></div>
@@ -41,7 +47,7 @@
           <div><span>SCORE / 100</span><strong id="score">—</strong></div>
           <div><span>CURVE</span><strong id="progress">—</strong></div>
           <div><span>PHASE</span><strong id="phase">—</strong></div>
-          <div><span>TAX / OPEN</span><strong id="taxes">—</strong></div>
+          <div><span>CREATOR / SNIPE</span><strong id="taxes">—</strong></div>
         </div>
         <div class="evidence-copy"><span>EVIDENCE</span><p id="evidence">Select a launch to inspect the score.</p></div>
       </div>
@@ -65,6 +71,11 @@
 
   <footer>
     <span>FACTORY <a href="https://robinhoodchain.blockscout.com/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e" target="_blank" rel="noreferrer">0x7eD5…EC7e ↗</a></span>
+    <nav class="social-links" aria-label="GPTHEIST links">
+      <a href="https://x.com/immortalhowwl" target="_blank" rel="noopener noreferrer">LOGICS ↗</a>
+      <a href="https://x.com/GPTHEIST" target="_blank" rel="noopener noreferrer">$GPTHEIST ↗</a>
+      <a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+    </nav>
     <span id="updated">NOT YET SYNCED</span>
     <span>OBSERVATION POLICY v1</span>
   </footer>
