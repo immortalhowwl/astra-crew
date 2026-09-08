@@ -1,9 +1,11 @@
 import { AGENTS, type AgentHandoff, type AgentOutcome } from "./simulation.js";
-import { assessPonsLaunch, readPonsMarketStates, type PonsAssessment, type PonsMarketState } from "./market.js";
+import { assessPonsLaunch, readPonsLaunchResearch, type PonsAssessment, type PonsMarketState, type PonsTokenMetadata } from "./market.js";
+import { toEventSelector } from "viem";
 
 export const ROBINHOOD_CHAIN_ID = 4663;
 export const PONS_FACTORY = "0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e";
 export const TOKEN_LAUNCHED_TOPIC = "0x8d4aad4953d0ca700d468f3753aa14432d1b35b43ec6409f051fb6aa43a89607" as const;
+export const POOL_GRADUATED_TOPIC = toEventSelector("PoolGraduated(address,uint256,uint256,uint256)");
 export const DEFAULT_RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
 
 export interface RpcLog {
@@ -83,8 +85,14 @@ export interface LiveLaunchDecision extends LiveLaunch {
   verdict: "WATCH" | "VETO";
   pairLabel: "ETH" | "OTHER";
   market: PonsMarketState;
+  metadata: PonsTokenMetadata;
   assessment: PonsAssessment;
   handoffs: AgentHandoff[];
+  deployerResearch: {
+    windowBlocks: number;
+    priorLaunches: number;
+    priorGraduations: number;
+  };
 }
 
 export interface LiveSnapshot {
@@ -93,6 +101,7 @@ export interface LiveSnapshot {
   fetchedAt: string;
   source: "Robinhood Chain RPC";
   mode: "read-only";
+  historyWindowBlocks: number;
   launches: LiveLaunchDecision[];
 }
 
@@ -156,7 +165,7 @@ export async function fetchLiveSnapshot(rpc: RpcCaller, options: { blockWindow?:
   if (typeof headHex !== "string") throw new Error("RPC returned an invalid head block");
   const headBlock = parseHexInteger(headHex);
   if (headBlock === null) throw new Error("RPC returned an invalid head block");
-  const requestedWindow = options.blockWindow ?? 1_500;
+  const requestedWindow = options.blockWindow ?? 25_000;
   if (!Number.isSafeInteger(requestedWindow) || requestedWindow < 1 || requestedWindow > 25_000) {
     throw new Error("blockWindow must be an integer from 1 to 25000");
   }
@@ -168,15 +177,43 @@ export async function fetchLiveSnapshot(rpc: RpcCaller, options: { blockWindow?:
     toBlock: headHex
   }]);
   if (!Array.isArray(rawLogs)) throw new Error("RPC returned invalid launch logs");
-  const decodedLaunches = rawLogs.filter(isRpcLog).map(decodeTokenLaunchedLog).filter((launch): launch is LiveLaunch => launch !== null)
-    .sort((a, b) => b.blockNumber - a.blockNumber || b.logIndex - a.logIndex)
-    .slice(0, 24);
-  const markets = await readPonsMarketStates(rpc, decodedLaunches, headHex);
+  const rawGraduations = await rpc("eth_getLogs", [{
+    address: PONS_FACTORY,
+    topics: [POOL_GRADUATED_TOPIC],
+    fromBlock: `0x${fromBlock.toString(16)}`,
+    toBlock: headHex
+  }]);
+  if (!Array.isArray(rawGraduations)) throw new Error("RPC returned invalid graduation logs");
+  const graduatedTokens = new Set(rawGraduations.filter(isRpcLog).flatMap((log) => {
+    if (log.address.toLowerCase() !== PONS_FACTORY || log.topics[0]?.toLowerCase() !== POOL_GRADUATED_TOPIC || log.topics.length < 2) return [];
+    const token = addressFromTopic(log.topics[1] ?? "");
+    return token ? [token] : [];
+  }));
+  const allLaunches = rawLogs.filter(isRpcLog).map(decodeTokenLaunchedLog).filter((launch): launch is LiveLaunch => launch !== null)
+    .sort((a, b) => b.blockNumber - a.blockNumber || b.logIndex - a.logIndex);
+  const decodedLaunches = allLaunches.slice(0, 24);
+  const research = await readPonsLaunchResearch(rpc, decodedLaunches, headHex);
   const launches = decodedLaunches.map((launch, index): LiveLaunchDecision => {
-    const market = markets[index] ?? { status: "UNAVAILABLE", reason: "market evidence missing" };
+    const market = research[index]?.market ?? { status: "UNAVAILABLE", reason: "market evidence missing" };
+    const metadata = research[index]?.metadata ?? { status: "UNAVAILABLE", reason: "token metadata missing" };
     const pairLabel = launch.pairToken === ZERO_ADDRESS ? "ETH" : "OTHER";
     const assessment = assessPonsLaunch(pairLabel, market);
-    return { ...launch, pairLabel, market, assessment, verdict: assessment.verdict, handoffs: liveHandoffs(launch, market, assessment) };
+    const prior = allLaunches.filter((candidate) => candidate.deployer === launch.deployer &&
+      (candidate.blockNumber < launch.blockNumber || (candidate.blockNumber === launch.blockNumber && candidate.logIndex < launch.logIndex)));
+    return {
+      ...launch,
+      pairLabel,
+      market,
+      metadata,
+      assessment,
+      verdict: assessment.verdict,
+      handoffs: liveHandoffs(launch, market, assessment),
+      deployerResearch: {
+        windowBlocks: requestedWindow,
+        priorLaunches: prior.length,
+        priorGraduations: prior.filter((candidate) => graduatedTokens.has(candidate.token)).length
+      }
+    };
   });
   return {
     chainId: ROBINHOOD_CHAIN_ID,
@@ -184,6 +221,7 @@ export async function fetchLiveSnapshot(rpc: RpcCaller, options: { blockWindow?:
     fetchedAt: new Date().toISOString(),
     source: "Robinhood Chain RPC",
     mode: "read-only",
+    historyWindowBlocks: requestedWindow,
     launches
   };
 }

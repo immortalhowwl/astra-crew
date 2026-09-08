@@ -5,11 +5,48 @@ let selected = null;
 let timer = null;
 let latestSnapshot = null;
 let activeFilter = "ALL";
+let socialRequest = 0;
 const short = (value, size=6) => `${value.slice(0,size+2)}…${value.slice(-4)}`;
 const explorer = (hash) => `https://robinhoodchain.blockscout.com/tx/${hash}`;
 const tokenExplorer = (address) => `https://robinhoodchain.blockscout.com/address/${address}`;
 const pons = (address) => `https://www.ponsfamily.com/launchpad/${address}`;
 const pct = (bps) => `${(bps / 100).toFixed(2)}%`;
+const formatWei = (value) => {
+  try { const n=BigInt(value), whole=n/1000000000000000000n, fraction=(n%1000000000000000000n).toString().padStart(18,"0").slice(0,4).replace(/0+$/,"");return `${whole}${fraction?`.${fraction}`:""} ETH` } catch { return "—" }
+};
+const socialHosts = {twitter:new Set(["x.com","www.x.com","twitter.com","www.twitter.com"]),telegram:new Set(["t.me","www.t.me"]),discord:new Set(["discord.gg","discord.com","www.discord.com"]),farcaster:new Set(["warpcast.com","www.warpcast.com"])};
+function safeSocialUrl(raw,type){try{const url=new URL(raw);if(!["http:","https:"].includes(url.protocol))return null;const allowed=socialHosts[type];if(allowed&&!allowed.has(url.hostname.toLowerCase()))return null;return url.href}catch{return null}}
+function xHandle(raw){const url=safeSocialUrl(raw,"twitter");if(!url)return null;const handle=new URL(url).pathname.split("/").filter(Boolean)[0]||"";return /^[A-Za-z0-9_]{1,15}$/.test(handle)?handle:null}
+
+async function researchX(raw){
+  const request=++socialRequest,handle=xHandle(raw);if(!handle)return;
+  $("social-proof").textContent=`X / @${handle} · CHECKING PUBLIC PROFILE…`;
+  try{const response=await fetch(`/api/social?handle=${encodeURIComponent(handle)}`,{headers:{accept:"application/json"}});if(!response.ok)throw new Error(`HTTP ${response.status}`);const profile=await response.json();if(request!==socialRequest)return;const year=new Date(profile.joined).getUTCFullYear();$("social-proof").textContent=`X / @${profile.handle} · ${profile.followers.toLocaleString()} FOLLOWERS · JOINED ${year}${profile.verified?" · VERIFIED":""} · PUBLIC MIRROR`}
+  catch{if(request===socialRequest)$("social-proof").textContent=`X / @${handle} DECLARED · PUBLIC PROFILE UNAVAILABLE · NOT SCORED`}
+}
+
+function renderDossier(launch){
+  const market=launch.market,meta=launch.metadata,history=launch.deployerResearch;
+  $("dossier-status").textContent=`BLOCK #${launch.blockNumber.toLocaleString()} · ${launch.verdict}`;
+  $("token-identity").textContent=meta.status==="DECLARED"?`${meta.name||"UNNAMED"} / $${meta.symbol||"—"}`:short(launch.token,8);
+  $("factory-proof").textContent=market.status==="VERIFIED"?"PONS V2 / VERIFIED":"UNAVAILABLE";
+  $("deployer-address").textContent=short(launch.deployer,8);
+  $("fee-route").textContent=market.status==="VERIFIED"?(market.creatorFeeRecipient.toLowerCase()===launch.deployer.toLowerCase()?"DEPLOYER":"THIRD PARTY"):"UNAVAILABLE";
+  $("liquidity-verdict").textContent=market.status==="VERIFIED"?`${market.phase} / ${pct(market.progressBps)}`:"UNAVAILABLE";
+  $("real-quote").textContent=market.status==="VERIFIED"?formatWei(market.realQuoteReserve):"—";
+  if(market.status==="VERIFIED"){const left=BigInt(market.graduationThreshold)>BigInt(market.realQuoteReserve)?BigInt(market.graduationThreshold)-BigInt(market.realQuoteReserve):0n;$("graduation-left").textContent=formatWei(left);$("curve-reserves").textContent=`${formatWei(market.quoteReserve)} / TOKEN ${short(market.tokenReserve,6)}`}
+  else{$("graduation-left").textContent="—";$("curve-reserves").textContent="—"}
+  $("deployer-verdict").textContent=history.priorLaunches===0?"FRESH IN WINDOW":history.priorLaunches>=5?"SERIAL LAUNCHER":"RETURNING";
+  $("prior-launches").textContent=String(history.priorLaunches);$("prior-graduated").textContent=String(history.priorGraduations);$("history-window").textContent=`${history.windowBlocks.toLocaleString()} BLOCKS`;
+  const socialRoot=$("social-links");socialRoot.replaceChildren();const declared=[];
+  if(meta.status==="DECLARED")Object.entries(meta.socials).forEach(([type,raw])=>{const url=safeSocialUrl(raw,type);if(!url)return;const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=`${type.toUpperCase()} ↗`;socialRoot.append(a);declared.push(type)});
+  if(!declared.length){const empty=document.createElement("span");empty.textContent="NO VALID DECLARED LINKS";socialRoot.append(empty)}
+  $("social-verdict").textContent=declared.length?`${declared.length} DECLARED / NOT ENDORSED`:"NO FOOTPRINT";
+  $("social-proof").textContent=declared.length?"Declared on chain · external reputation not yet scored":"No valid social URLs declared in token metadata.";
+  socialRequest++;if(meta.status==="DECLARED"&&meta.socials.twitter)researchX(meta.socials.twitter);
+  const flags=[...launch.assessment.blockers];if(market.status==="VERIFIED"&&market.currentSnipeTaxBps>500)flags.push(`Snipe tax ${pct(market.currentSnipeTaxBps)}`);if(history.priorLaunches>=5)flags.push(`${history.priorLaunches} prior launches in window`);if(!declared.length)flags.push("No valid declared social links");flags.push(...launch.assessment.unknowns);
+  const riskRoot=$("risk-flags");riskRoot.replaceChildren();flags.forEach(flag=>{const li=document.createElement("li");li.textContent=flag;riskRoot.append(li)});$("risk-verdict").textContent=flags.length?`${flags.length} FLAGS / GAPS`:"NO FLAGS IN CURRENT RULESET";
+}
 
 function buildRoute(){
   const root=$("route"); root.replaceChildren();
@@ -39,6 +76,7 @@ function selectLaunch(launch){
   evidence.push(`SCORE — ${assessment.reasons.join(" · ")}`);
   evidence.push(`UNRESOLVED — ${assessment.unknowns.join(" · ")}`);
   $("evidence").textContent=evidence.join("  /  ");
+  renderDossier(launch);
   const trace=$("trace");trace.replaceChildren();launch.handoffs.forEach(h=>{const li=document.createElement("li");li.className=h.outcome.toLowerCase();const seq=document.createElement("span");seq.textContent=`${String(h.sequence).padStart(2,"0")} / ${h.outcome}`;const title=document.createElement("strong");title.textContent=h.agent;const copy=document.createElement("p");copy.textContent=h.message;li.append(seq,title,copy);trace.append(li)});animate(launch);
 }
 

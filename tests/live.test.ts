@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { encodeFunctionResult, parseAbi } from "viem";
 import { decodeTokenLaunchedLog, fetchLiveSnapshot, TOKEN_LAUNCHED_TOPIC } from "../src/live.js";
-import { MULTICALL3, assessPonsLaunch, decodePonsMarketState } from "../src/market.js";
+import { MULTICALL3, assessPonsLaunch, decodePonsMarketState, decodePonsTokenMetadata } from "../src/market.js";
 
 const word = (value: string): string => value.replace(/^0x/, "").padStart(64, "0");
 const addressTopic = (address: string): `0x${string}` => `0x${word(address)}`;
@@ -12,6 +12,42 @@ const uintWord = (value: string): string => BigInt(value).toString(16).padStart(
 const multicallAbi = parseAbi([
   "function aggregate3((address target,bool allowFailure,bytes callData)[] calls) payable returns ((bool success,bytes returnData)[] returnData)"
 ]);
+const tokenMetadataAbi = parseAbi([
+  "struct Socials { string twitter; string telegram; string discord; string website; string farcaster; }",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function getTokenInfo() view returns (address tokenDeployer, string tokenLogo, string tokenDescription, Socials tokenSocials)"
+]);
+
+test("decodes declared token identity and socials without claiming external reputation", () => {
+  const name = encodeFunctionResult({ abi: tokenMetadataAbi, functionName: "name", result: "Research Cat" });
+  const symbol = encodeFunctionResult({ abi: tokenMetadataAbi, functionName: "symbol", result: "RCAT" });
+  const info = encodeFunctionResult({
+    abi: tokenMetadataAbi,
+    functionName: "getTokenInfo",
+    result: [
+      "0x3333333333333333333333333333333333333333",
+      "https://example.com/logo.png",
+      "on-chain description",
+      { twitter: "https://x.com/researchcat", telegram: "https://t.me/researchcat", discord: "", website: "https://research.cat", farcaster: "" }
+    ]
+  });
+  assert.deepEqual(decodePonsTokenMetadata(name, symbol, info), {
+    status: "DECLARED",
+    name: "Research Cat",
+    symbol: "RCAT",
+    description: "on-chain description",
+    logo: "https://example.com/logo.png",
+    socials: {
+      twitter: "https://x.com/researchcat",
+      telegram: "https://t.me/researchcat",
+      discord: "",
+      website: "https://research.cat",
+      farcaster: ""
+    }
+  });
+  assert.deepEqual(decodePonsTokenMetadata("0x", "0x", "0x"), { status: "UNAVAILABLE", reason: "token metadata unreadable" });
+});
 
 test("scores verified ETH launches for watchlisting with inspectable reasons", () => {
   const assessment = assessPonsLaunch("ETH", {
@@ -240,7 +276,12 @@ test("fetches real-shaped Robinhood logs and turns each launch into ten inspecta
   assert.match(snapshot.launches[0]?.handoffs[8]?.message ?? "", /market evidence unavailable/i);
   assert.equal(snapshot.launches[0]?.handoffs[9]?.message.includes("no order"), true);
   assert.equal(snapshot.launches[0]?.market.status, "UNAVAILABLE");
-  assert.deepEqual(methods, ["eth_chainId", "eth_blockNumber", "eth_getLogs", "eth_call"]);
+  assert.deepEqual(snapshot.launches[0]?.deployerResearch, {
+    windowBlocks: 100,
+    priorLaunches: 0,
+    priorGraduations: 0
+  });
+  assert.deepEqual(methods, ["eth_chainId", "eth_blockNumber", "eth_getLogs", "eth_getLogs", "eth_call"]);
 });
 
 test("fetches market evidence with read-only calls pinned to the snapshot head", async () => {
@@ -254,6 +295,13 @@ test("fetches market evidence with read-only calls pinned to the snapshot head",
     uintWord("4200000000000000000"), word("0x0"), word("0xc8"), word("0x64"),
     boolWord(false), word("0x0"), word("0x0"), word("0x0"), word("0x0"), boolWord(true)
   ].join("")}`;
+  const tokenName = encodeFunctionResult({ abi: tokenMetadataAbi, functionName: "name", result: "Research Cat" });
+  const tokenSymbol = encodeFunctionResult({ abi: tokenMetadataAbi, functionName: "symbol", result: "RCAT" });
+  const tokenInfo = encodeFunctionResult({
+    abi: tokenMetadataAbi,
+    functionName: "getTokenInfo",
+    result: [deployer, "", "live metadata", { twitter: "https://x.com/researchcat", telegram: "", discord: "", website: "https://research.cat", farcaster: "" }]
+  });
   const rpc = async (method: string, params?: unknown[]): Promise<unknown> => {
     calls.push(params === undefined ? { method } : { method, params });
     if (method === "eth_chainId") return "0x1237";
@@ -277,7 +325,10 @@ test("fetches market evidence with read-only calls pinned to the snapshot head",
           { success: true, returnData: factoryRecord as `0x${string}` },
           { success: true, returnData: `0x${uintWord("1680000000000000000")}${uintWord("970000000000000000000000000")}` as `0x${string}` },
           { success: true, returnData: `0x${uintWord("2100000000000000000")}` as `0x${string}` },
-          { success: true, returnData: `0x${word("0x0")}` as `0x${string}` }
+          { success: true, returnData: `0x${word("0x0")}` as `0x${string}` },
+          { success: true, returnData: tokenName },
+          { success: true, returnData: tokenSymbol },
+          { success: true, returnData: tokenInfo }
         ]
       });
     }
@@ -287,6 +338,8 @@ test("fetches market evidence with read-only calls pinned to the snapshot head",
   const snapshot = await fetchLiveSnapshot(rpc, { blockWindow: 100 });
   assert.equal(snapshot.launches[0]?.market.status, "VERIFIED");
   assert.equal(snapshot.launches[0]?.market.status === "VERIFIED" && snapshot.launches[0].market.progressBps, 5000);
+  assert.equal(snapshot.launches[0]?.metadata.status, "DECLARED");
+  assert.equal(snapshot.launches[0]?.metadata.status === "DECLARED" && snapshot.launches[0].metadata.socials.twitter, "https://x.com/researchcat");
   assert.match(snapshot.launches[0]?.handoffs[4]?.message ?? "", /factory record and curve state verified/i);
   assert.match(snapshot.launches[0]?.handoffs[5]?.message ?? "", /50\.00% curve progress/i);
   assert.equal(calls.filter((call) => call.method === "eth_call").length, 1);

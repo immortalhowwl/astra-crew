@@ -20,6 +20,7 @@ export interface DeskServerOptions {
   assetsRoot?: string;
   cacheMs?: number;
   failureCacheMs?: number;
+  socialFetch?: typeof fetch;
 }
 
 export interface RpcCallerOptions {
@@ -96,6 +97,8 @@ export function createDeskServer(options: DeskServerOptions = {}): Server {
   const root = resolve(options.assetsRoot ?? DEFAULT_ASSETS);
   const cacheMs = options.cacheMs ?? 4_000;
   const failureCacheMs = options.failureCacheMs ?? 15_000;
+  const socialFetch = options.socialFetch ?? fetch;
+  const socialCache = new Map<string, { at: number; value: string }>();
   let cached: { at: number; value: LiveSnapshot } | null = null;
   let cachedFailure: { at: number; message: string } | null = null;
   let pending: Promise<LiveSnapshot> | null = null;
@@ -124,13 +127,60 @@ export function createDeskServer(options: DeskServerOptions = {}): Server {
 
   return createServer(async (request, response) => {
     try {
-      const path = new URL(request.url ?? "/", "http://localhost").pathname;
+      const requestUrl = new URL(request.url ?? "/", "http://localhost");
+      const path = requestUrl.pathname;
       if (request.method !== "GET") {
         send(response, 405, "application/json; charset=utf-8", JSON.stringify({ error: "method not allowed" }));
         return;
       }
       if (path === "/health") {
         send(response, 200, "application/json; charset=utf-8", JSON.stringify({ status: "ok", mode: "read-only", chainId: ROBINHOOD_CHAIN_ID }));
+        return;
+      }
+      if (path === "/api/social") {
+        const handle = requestUrl.searchParams.get("handle") ?? "";
+        if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) {
+          send(response, 400, "application/json; charset=utf-8", JSON.stringify({ error: "invalid X handle" }));
+          return;
+        }
+        const key = handle.toLowerCase();
+        const hit = socialCache.get(key);
+        if (hit && Date.now() - hit.at < 300_000) {
+          send(response, 200, "application/json; charset=utf-8", hit.value);
+          return;
+        }
+        const controller = new AbortController();
+        const socialTimer = setTimeout(() => controller.abort(), 8_000);
+        try {
+          const upstream = await socialFetch(`https://api.fxtwitter.com/${key}`, {
+            headers: { accept: "application/json", "user-agent": "gptheist/1.2 read-only" },
+            signal: controller.signal
+          });
+          if (!upstream.ok) throw new Error(`profile HTTP ${upstream.status}`);
+          const payload = await upstream.json() as { user?: Record<string, unknown> };
+          const user = payload.user;
+          if (!user || typeof user.screen_name !== "string" || typeof user.name !== "string" ||
+              typeof user.followers !== "number" || typeof user.joined !== "string" || typeof user.protected !== "boolean") {
+            throw new Error("invalid public profile response");
+          }
+          const value = JSON.stringify({
+            status: "PUBLIC_PROFILE",
+            handle: user.screen_name.slice(0, 15),
+            name: user.name.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, 80),
+            followers: Math.max(0, Math.floor(user.followers)),
+            joined: user.joined.slice(0, 80),
+            protected: user.protected,
+            verified: Boolean((user.verification as { verified?: unknown } | undefined)?.verified),
+            source: "FxTwitter public profile mirror"
+          });
+          socialCache.set(key, { at: Date.now(), value });
+          send(response, 200, "application/json; charset=utf-8", value);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message.slice(0, 120) : "profile unavailable";
+          send(response, 502, "application/json; charset=utf-8", JSON.stringify({ status: "UNAVAILABLE", error: message }));
+        } finally {
+          clearTimeout(socialTimer);
+        }
         return;
       }
       if (path === "/api/snapshot") {

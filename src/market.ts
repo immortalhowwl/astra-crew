@@ -6,6 +6,45 @@ export const MULTICALL3 = "0xca11bde05977b3631167028862be2a173976ca11";
 const MULTICALL_ABI = parseAbi([
   "function aggregate3((address target,bool allowFailure,bytes callData)[] calls) payable returns ((bool success,bytes returnData)[] returnData)"
 ]);
+const TOKEN_METADATA_ABI = parseAbi([
+  "struct Socials { string twitter; string telegram; string discord; string website; string farcaster; }",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function getTokenInfo() view returns (address tokenDeployer, string tokenLogo, string tokenDescription, Socials tokenSocials)"
+]);
+
+export interface DeclaredPonsTokenMetadata {
+  status: "DECLARED";
+  name: string;
+  symbol: string;
+  logo: string;
+  description: string;
+  socials: { twitter: string; telegram: string; discord: string; website: string; farcaster: string };
+}
+
+export interface UnavailablePonsTokenMetadata { status: "UNAVAILABLE"; reason: string }
+export type PonsTokenMetadata = DeclaredPonsTokenMetadata | UnavailablePonsTokenMetadata;
+
+function safeText(value: unknown, maximum: number): string | null {
+  return typeof value === "string" ? value.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, maximum) : null;
+}
+
+export function decodePonsTokenMetadata(nameRaw: unknown, symbolRaw: unknown, infoRaw: unknown): PonsTokenMetadata {
+  try {
+    if (typeof nameRaw !== "string" || typeof symbolRaw !== "string" || typeof infoRaw !== "string") throw new Error();
+    const name = safeText(decodeFunctionResult({ abi: TOKEN_METADATA_ABI, functionName: "name", data: nameRaw as Hex }), 120);
+    const symbol = safeText(decodeFunctionResult({ abi: TOKEN_METADATA_ABI, functionName: "symbol", data: symbolRaw as Hex }), 32);
+    const info = decodeFunctionResult({ abi: TOKEN_METADATA_ABI, functionName: "getTokenInfo", data: infoRaw as Hex });
+    const logo = safeText(info[1], 500), description = safeText(info[2], 500), declared = info[3];
+    const twitter = safeText(declared.twitter, 500), telegram = safeText(declared.telegram, 500);
+    const discord = safeText(declared.discord, 500), website = safeText(declared.website, 500), farcaster = safeText(declared.farcaster, 500);
+    if (name === null || symbol === null || logo === null || description === null || twitter === null || telegram === null ||
+        discord === null || website === null || farcaster === null) throw new Error();
+    return { status: "DECLARED", name, symbol, logo, description, socials: { twitter, telegram, discord, website, farcaster } };
+  } catch {
+    return { status: "UNAVAILABLE", reason: "token metadata unreadable" };
+  }
+}
 
 export const PONS_SELECTORS = {
   getLaunchedToken: "0x3cf28b5a",
@@ -205,11 +244,16 @@ export function decodePonsMarketState(launch: LiveLaunch, reads: PonsMarketReads
   };
 }
 
-export async function readPonsMarketStates(
+export interface PonsLaunchResearch {
+  market: PonsMarketState;
+  metadata: PonsTokenMetadata;
+}
+
+export async function readPonsLaunchResearch(
   rpc: RpcCaller,
   launches: LiveLaunch[],
   blockTag: string
-): Promise<PonsMarketState[]> {
+): Promise<PonsLaunchResearch[]> {
   if (launches.length === 0) return [];
   const calls = launches.flatMap((launch) => [
     {
@@ -223,37 +267,43 @@ export async function readPonsMarketStates(
       target: launch.curve as `0x${string}`,
       allowFailure: true,
       callData: `${PONS_SELECTORS.currentSnipeTaxBps}${encodeAddressArgument(MARKET_PROBE_RECIPIENT)}` as Hex
-    }
+    },
+    { target: launch.token as `0x${string}`, allowFailure: true, callData: encodeFunctionData({ abi: TOKEN_METADATA_ABI, functionName: "name" }) },
+    { target: launch.token as `0x${string}`, allowFailure: true, callData: encodeFunctionData({ abi: TOKEN_METADATA_ABI, functionName: "symbol" }) },
+    { target: launch.token as `0x${string}`, allowFailure: true, callData: encodeFunctionData({ abi: TOKEN_METADATA_ABI, functionName: "getTokenInfo" }) }
   ]);
 
   try {
     const data = encodeFunctionData({ abi: MULTICALL_ABI, functionName: "aggregate3", args: [calls] });
     const raw = await rpc("eth_call", [{ to: MULTICALL3, data }, blockTag]);
     if (typeof raw !== "string" || !/^0x[0-9a-fA-F]*$/.test(raw)) throw new Error("invalid multicall response");
-    const results = decodeFunctionResult({
-      abi: MULTICALL_ABI,
-      functionName: "aggregate3",
-      data: raw as Hex
-    });
+    const results = decodeFunctionResult({ abi: MULTICALL_ABI, functionName: "aggregate3", data: raw as Hex });
     if (results.length !== calls.length) throw new Error("incomplete multicall response");
 
     return launches.map((launch, index) => {
-      const group = results.slice(index * 4, index * 4 + 4);
-      if (group.length !== 4 || group.some((result) => !result.success)) {
-        return { status: "UNAVAILABLE", reason: "one or more pinned Pons market reads failed" };
-      }
-      return decodePonsMarketState(launch, {
-        factoryRecord: group[0]?.returnData,
-        reserves: group[1]?.returnData,
-        realQuoteReserve: group[2]?.returnData,
-        currentSnipeTaxBps: group[3]?.returnData
-      });
+      const group = results.slice(index * 7, index * 7 + 7);
+      const market = group.length === 7 && group.slice(0, 4).every((result) => result.success)
+        ? decodePonsMarketState(launch, {
+          factoryRecord: group[0]?.returnData,
+          reserves: group[1]?.returnData,
+          realQuoteReserve: group[2]?.returnData,
+          currentSnipeTaxBps: group[3]?.returnData
+        })
+        : { status: "UNAVAILABLE", reason: "one or more pinned Pons market reads failed" } as PonsMarketState;
+      const metadata = group.length === 7 && group.slice(4).every((result) => result.success)
+        ? decodePonsTokenMetadata(group[4]?.returnData, group[5]?.returnData, group[6]?.returnData)
+        : { status: "UNAVAILABLE", reason: "token metadata unreadable" } as PonsTokenMetadata;
+      return { market, metadata };
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "RPC read failed";
     return launches.map(() => ({
-      status: "UNAVAILABLE",
-      reason: `market reads unavailable: ${message.slice(0, 120)}`
+      market: { status: "UNAVAILABLE", reason: `market reads unavailable: ${message.slice(0, 120)}` },
+      metadata: { status: "UNAVAILABLE", reason: "token metadata unavailable with market reads" }
     }));
   }
+}
+
+export async function readPonsMarketStates(rpc: RpcCaller, launches: LiveLaunch[], blockTag: string): Promise<PonsMarketState[]> {
+  return (await readPonsLaunchResearch(rpc, launches, blockTag)).map((research) => research.market);
 }

@@ -5,18 +5,34 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="GPTHEIST Desk — a read-only ten-agent observation room for Pons launches on Robinhood Chain.">
   <title>GPTHEIST DESK</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/desk.css">
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
   <header class="masthead">
     <div class="brand"><span>GPT</span>HEIST <sup>DESK</sup></div>
+    <nav class="desk-nav" aria-label="Desk sections">
+      <a href="#live-desk">LIVE DESK</a>
+      <a href="#dossier">DOSSIER</a>
+      <a href="#roadmap">ROADMAP</a>
+      <a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
+    </nav>
     <div class="chain-lock"><i id="pulse"></i><span>ROBINHOOD CHAIN</span><b id="block">CONNECTING</b></div>
-    <button id="get-token" class="buy-cta" type="button" disabled aria-disabled="true">GET $GPTHEIST · SOON</button>
     <div class="safety">READ-ONLY<br><b>NO WALLET · NO EXECUTION</b></div>
   </header>
 
-  <main>
+  <div class="system-strip" aria-label="System guarantees">
+    <span>MODE <b>READ ONLY</b></span><i></i>
+    <span>AGENTS <b>10</b></span><i></i>
+    <span>FACTORY <b>PONS V2</b></span><i></i>
+    <span>WALLET ACCESS <b>0</b></span><i></i>
+    <span>EXECUTION PATHS <b>0</b></span>
+  </div>
+
+  <main id="live-desk">
     <section class="briefing">
       <p class="eyebrow">OPERATION / LIVE FACTORY WATCH</p>
       <h1>TEN CHECKS.<br><em>ONE VERDICT.</em></h1>
@@ -67,13 +83,73 @@
       <div class="panel-head"><span>CHAIN OF CUSTODY</span><b id="trace-id">NO TRACE</b></div>
       <ol id="trace" class="trace"></ol>
     </section>
+
+    <section class="dossier-panel" id="dossier" aria-label="Selected launch research dossier">
+      <div class="section-head">
+        <div><span>SELECTED TARGET / READ-ONLY RESEARCH</span><h2>TARGET DOSSIER</h2></div>
+        <b id="dossier-status">AWAITING VERIFIED LAUNCH</b>
+      </div>
+      <div class="dossier-grid">
+        <article class="intel identity-intel">
+          <span>IDENTITY / PROVENANCE</span>
+          <h3 id="token-identity">NO TARGET</h3>
+          <dl>
+            <div><dt>factory</dt><dd id="factory-proof">—</dd></div>
+            <div><dt>deployer</dt><dd id="deployer-address">—</dd></div>
+            <div><dt>fee route</dt><dd id="fee-route">—</dd></div>
+          </dl>
+        </article>
+        <article class="intel">
+          <span>LIQUIDITY STATE</span>
+          <h3 id="liquidity-verdict">UNREAD</h3>
+          <dl>
+            <div><dt>real quote in</dt><dd id="real-quote">—</dd></div>
+            <div><dt>to graduation</dt><dd id="graduation-left">—</dd></div>
+            <div><dt>curve reserves</dt><dd id="curve-reserves">—</dd></div>
+          </dl>
+        </article>
+        <article class="intel">
+          <span>DEPLOYER RECORD</span>
+          <h3 id="deployer-verdict">UNREAD</h3>
+          <dl>
+            <div><dt>prior launches</dt><dd id="prior-launches">—</dd></div>
+            <div><dt>graduated</dt><dd id="prior-graduated">—</dd></div>
+            <div><dt>observed window</dt><dd id="history-window">—</dd></div>
+          </dl>
+        </article>
+        <article class="intel social-intel">
+          <span>SOCIAL FOOTPRINT</span>
+          <h3 id="social-verdict">UNREAD</h3>
+          <nav id="social-links" aria-label="Declared project social links"><span>NO DECLARED LINKS</span></nav>
+          <p id="social-proof">On-chain declarations are shown separately from external profile reputation.</p>
+        </article>
+        <article class="intel risk-intel">
+          <span>RISK FLAGS / KNOWN GAPS</span>
+          <h3 id="risk-verdict">FAIL CLOSED</h3>
+          <ul id="risk-flags"><li>Select a launch to inspect explicit risks.</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="roadmap-panel" id="roadmap" aria-label="GPTHEIST product roadmap">
+      <div class="section-head">
+        <div><span>PUBLIC BUILD SEQUENCE</span><h2>ROADMAP</h2></div>
+        <b>NO TOKEN REQUIRED</b>
+      </div>
+      <ol class="roadmap">
+        <li class="live"><span>01 / LIVE</span><h3>CHAIN DESK</h3><p>Pons factory feed, ten-agent handoff, inspectable WATCH/VETO rules, explorer trace.</p></li>
+        <li class="live"><span>02 / LIVE</span><h3>RESEARCH DOSSIER</h3><p>Liquidity state, deployer history window, declared socials, provenance and visible unknowns.</p></li>
+        <li class="building"><span>03 / BUILDING</span><h3>SOCIAL REPUTATION</h3><p>Public X profile age, reach and identity signals, isolated from the on-chain verdict.</p></li>
+        <li><span>04 / NEXT</span><h3>FLOW FORENSICS</h3><p>Buy/sell activity, unique participants, launch transaction and declared bundle analysis.</p></li>
+        <li><span>05 / NEXT</span><h3>ALERTS + RULESETS</h3><p>Saved policies, watchlists and read-only alerts. No wallet access and no autonomous execution.</p></li>
+      </ol>
+    </section>
   </main>
 
   <footer>
     <span>FACTORY <a href="https://robinhoodchain.blockscout.com/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e" target="_blank" rel="noreferrer">0x7eD5…EC7e ↗</a></span>
     <nav class="social-links" aria-label="GPTHEIST links">
       <a href="https://x.com/immortalhowwl" target="_blank" rel="noopener noreferrer">LOGICS ↗</a>
-      <a href="https://x.com/GPTHEIST" target="_blank" rel="noopener noreferrer">$GPTHEIST ↗</a>
       <a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">GITHUB ↗</a>
     </nav>
     <span id="updated">NOT YET SYNCED</span>

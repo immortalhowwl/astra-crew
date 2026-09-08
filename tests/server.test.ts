@@ -55,6 +55,30 @@ test("Desk caches upstream failures so clients cannot amplify RPC retries", asyn
   assert.equal(calls, 1);
 });
 
+test("Desk exposes bounded read-only X profile research without arbitrary outbound URLs", async (t) => {
+  const socialFetch = async (url: string | URL | Request): Promise<Response> => {
+    assert.equal(String(url), "https://api.fxtwitter.com/researchcat");
+    return new Response(JSON.stringify({ code: 200, user: {
+      screen_name: "researchcat", name: "Research Cat", followers: 321,
+      joined: "Sat Dec 16 05:10:35 +0000 2023", protected: false,
+      verification: { verified: true, type: "individual" }
+    } }), { status: 200 });
+  };
+  const server = createDeskServer({ rpc: fakeRpc, socialFetch: socialFetch as typeof fetch });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  t.after(() => server.close());
+  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const valid = await fetch(`${base}/api/social?handle=researchcat`);
+  assert.equal(valid.status, 200);
+  assert.deepEqual(await valid.json(), {
+    status: "PUBLIC_PROFILE", handle: "researchcat", name: "Research Cat", followers: 321,
+    joined: "Sat Dec 16 05:10:35 +0000 2023", protected: false, verified: true,
+    source: "FxTwitter public profile mirror"
+  });
+  assert.equal((await fetch(`${base}/api/social?handle=https://evil.example`)).status, 400);
+});
+
 test("Desk serves the UI, health, and a read-only live snapshot with defensive headers", async (t) => {
   const server = createDeskServer({ rpc: fakeRpc });
   server.listen(0, "127.0.0.1");
@@ -74,16 +98,24 @@ test("Desk serves the UI, health, and a read-only live snapshot with defensive h
   assert.match(productHtml, /id="pons-link"/);
   assert.match(productHtml, /id="token-link"/);
   assert.match(productHtml, /id="tx-link"/);
-  assert.match(productHtml, /GET \$GPTHEIST/);
-  assert.match(productHtml, /aria-disabled="true"/);
+  assert.doesNotMatch(productHtml, /GET \$GPTHEIST/);
+  assert.doesNotMatch(productHtml, /https:\/\/x\.com\/GPTHEIST/);
+  assert.match(productHtml, /TARGET DOSSIER/);
+  assert.match(productHtml, /SOCIAL FOOTPRINT/);
+  assert.match(productHtml, /DEPLOYER RECORD/);
+  assert.match(productHtml, /LIQUIDITY STATE/);
+  assert.match(productHtml, /ROADMAP/);
   assert.match(productHtml, /https:\/\/x\.com\/immortalhowwl/);
-  assert.match(productHtml, /https:\/\/x\.com\/GPTHEIST/);
   assert.match(productHtml, /https:\/\/github\.com\/immortalhowwl\/gptheist/);
 
   const deskScript = await (await fetch(`${base}/desk.js`)).text();
   assert.match(deskScript, /ponsfamily\.com\/launchpad/);
   assert.match(deskScript, /robinhoodchain\.blockscout\.com\/address/);
   assert.match(deskScript, /robinhoodchain\.blockscout\.com\/tx/);
+  assert.match(deskScript, /deployerResearch/);
+  assert.match(deskScript, /realQuoteReserve/);
+  assert.match(deskScript, /\/api\/social\?handle=/);
+  assert.doesNotMatch(deskScript, /get-token/);
   assert.doesNotMatch(deskScript, /dblclick/);
 
   const deskCss = await (await fetch(`${base}/desk.css`)).text();
