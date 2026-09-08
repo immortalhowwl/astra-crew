@@ -108,6 +108,21 @@ test("Desk serves the UI, health, and a read-only live snapshot with defensive h
   assert.match(productHtml, /https:\/\/x\.com\/immortalhowwl/);
   assert.match(productHtml, /https:\/\/github\.com\/immortalhowwl\/gptheist/);
 
+  for (const route of ["trace", "crew", "method", "vault"]) {
+    const roomPage = await fetch(`${base}/${route}`);
+    assert.equal(roomPage.status, 200);
+    const roomHtml = await roomPage.text();
+    assert.match(roomHtml, /GPTHEIST/);
+    assert.match(roomHtml, /data-room="trace"/);
+    assert.match(roomHtml, /data-room="crew"/);
+    assert.match(roomHtml, /data-room="method"/);
+    assert.match(roomHtml, /data-room="vault"/);
+  }
+  const roomsScript = await (await fetch(`${base}/rooms.js`)).text();
+  assert.match(roomsScript, /\/api\/snapshot/);
+  assert.match(roomsScript, /HANDOFF|handoff-chord/i);
+  assert.doesNotMatch(roomsScript, /innerHTML|insertAdjacentHTML|wallet|eth_sendTransaction/);
+
   const deskScript = await (await fetch(`${base}/desk.js`)).text();
   assert.match(deskScript, /ponsfamily\.com\/launchpad/);
   assert.match(deskScript, /robinhoodchain\.blockscout\.com\/address/);

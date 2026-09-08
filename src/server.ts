@@ -121,8 +121,13 @@ export function createDeskServer(options: DeskServerOptions = {}): Server {
   const assets: Record<string, [string, string]> = {
     "/": ["index.html", "text/html; charset=utf-8"],
     "/index.html": ["index.html", "text/html; charset=utf-8"],
+    "/trace": ["room.html", "text/html; charset=utf-8"],
+    "/crew": ["room.html", "text/html; charset=utf-8"],
+    "/method": ["room.html", "text/html; charset=utf-8"],
+    "/vault": ["room.html", "text/html; charset=utf-8"],
     "/desk.css": ["desk.css", "text/css; charset=utf-8"],
-    "/desk.js": ["desk.js", "text/javascript; charset=utf-8"]
+    "/desk.js": ["desk.js", "text/javascript; charset=utf-8"],
+    "/rooms.js": ["rooms.js", "text/javascript; charset=utf-8"]
   };
 
   return createServer(async (request, response) => {

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="GPTHEIST — inspectable, read-only intelligence for Pons launches on Robinhood Chain.">
+  <title>GPTHEIST</title>
+  <link rel="stylesheet" href="/desk.css">
+</head>
+<body class="room-body">
+  <div class="grain" aria-hidden="true"></div>
+  <header class="masthead room-masthead">
+    <a class="brand brand-link" href="/"><span>GPT</span>HEIST <sup>DESK</sup></a>
+    <nav class="desk-nav room-nav" aria-label="GPTHEIST rooms">
+      <a href="/">DESK</a>
+      <a href="/trace" data-room-link="trace">TRACE</a>
+      <a href="/crew" data-room-link="crew">CREW</a>
+      <a href="/method" data-room-link="method">METHOD</a>
+      <a href="/vault" data-room-link="vault">VAULT</a>
+    </nav>
+    <div class="chain-lock"><i id="pulse"></i><span>ROBINHOOD CHAIN</span><b id="block">CONNECTING</b></div>
+    <div class="safety">READ-ONLY<br><b>NO WALLET · NO EXECUTION</b></div>
+  </header>
+
+  <div class="system-strip" aria-label="System guarantees">
+    <span>ROOM <b id="room-name">TRACE</b></span><i></i>
+    <span>SOURCE <b>LIVE RPC</b></span><i></i>
+    <span>AGENTS <b>10</b></span><i></i>
+    <span>MODEL <b>DETERMINISTIC</b></span><i></i>
+    <span>ORDERS SENT <b>0</b></span>
+  </div>
+
+  <main class="rooms-main">
+    <section class="room-view trace-room" data-room="trace">
+      <header class="room-hero">
+        <div>
+          <p class="eyebrow">LIVE DECISION TOPOLOGY</p>
+          <h1>TRACE<br><em>THE HEIST.</em></h1>
+        </div>
+        <p>One observed launch, unfolded into the evidence, handoffs and veto path behind its verdict. Every line comes from the current snapshot or a printed scoring rule.</p>
+      </header>
+
+      <div class="trace-selector">
+        <label for="trace-launch">INTERCEPT</label>
+        <select id="trace-launch" aria-label="Choose a live launch"></select>
+        <a id="trace-token-link" href="https://robinhoodchain.blockscout.com/" target="_blank" rel="noopener noreferrer">OPEN TOKEN ↗</a>
+      </div>
+
+      <section class="war-grid" aria-label="Live launch analysis">
+        <article class="war-card verdict-card">
+          <div class="war-head"><span>01 / VERDICT</span><b>LIVE</b></div>
+          <strong id="war-verdict">SYNCING</strong>
+          <div class="war-kpis">
+            <div><span>SCORE</span><b id="war-score">—</b></div>
+            <div><span>CURVE</span><b id="war-curve">—</b></div>
+            <div><span>PHASE</span><b id="war-phase">—</b></div>
+            <div><span>PAIR</span><b id="war-pair">—</b></div>
+          </div>
+          <p id="war-reason">Waiting for verified chain evidence.</p>
+        </article>
+
+        <article class="war-card fingerprint-card">
+          <div class="war-head"><span>02 / DECISION FINGERPRINT</span><b>5 AXES</b></div>
+          <svg id="fingerprint" viewBox="0 0 420 300" role="img" aria-label="Five-axis scoring fingerprint"></svg>
+          <div class="axis-key" id="axis-key"></div>
+        </article>
+
+        <article class="war-card chord-card">
+          <div class="war-head"><span>03 / HANDOFF CHORD</span><b>10 ROLES</b></div>
+          <svg id="handoff-chord" viewBox="0 0 620 390" role="img" aria-label="Agent handoff path"></svg>
+          <p>THE LINE IS THE ORDER OF REVIEW · COLOR IS THE OUTCOME</p>
+        </article>
+
+        <article class="war-card graph-card">
+          <div class="war-head"><span>04 / EVIDENCE GRAPH</span><b>CHAIN + DECLARED</b></div>
+          <svg id="evidence-graph" viewBox="0 0 920 420" role="img" aria-label="Verified launch relationship graph"></svg>
+          <div class="graph-legend"><span><i class="verified"></i>VERIFIED ON CHAIN</span><span><i class="declared"></i>DECLARED BY TOKEN</span><span><i class="unknown"></i>UNMEASURED</span></div>
+        </article>
+
+        <article class="war-card ledger-card">
+          <div class="war-head"><span>05 / SCORE LEDGER</span><b>NO HIDDEN WEIGHTS</b></div>
+          <div id="score-ledger" class="score-ledger"></div>
+        </article>
+
+        <article class="war-card log-card">
+          <div class="war-head"><span>06 / ACTIVITY LOG</span><b id="log-count">10 EVENTS</b></div>
+          <ol id="war-log" class="war-log"></ol>
+        </article>
+      </section>
+    </section>
+
+    <section class="room-view crew-room" data-room="crew" hidden>
+      <header class="room-hero crew-hero">
+        <div><p class="eyebrow">TEN ROLES · ONE KILL SWITCH</p><h1>THE<br><em>CREW.</em></h1></div>
+        <p>Not ten chatbots pretending to debate. Ten fixed responsibilities, one direction of travel, and one explicit veto gate before the final read-only verdict.</p>
+      </header>
+      <div class="crew-line" id="crew-line" aria-label="The ten GPTHEIST agents"></div>
+      <section class="crew-manifesto">
+        <div><span>RULE 01</span><h2>EACH ROLE CAN ONLY ADD ITS OWN EVIDENCE</h2></div>
+        <div><span>RULE 02</span><h2>PALERMO CAN KILL THE ROUTE</h2></div>
+        <div><span>RULE 03</span><h2>PROFESSOR CAN NEVER SEND AN ORDER</h2></div>
+      </section>
+    </section>
+
+    <section class="room-view method-room" data-room="method" hidden>
+      <header class="room-hero method-hero">
+        <div><p class="eyebrow">THE RULEBOOK IS THE PRODUCT</p><h1>NO BLACK<br><em>BOX.</em></h1></div>
+        <p>The score is a visible checklist over pinned chain reads. Missing evidence stays missing. A polished interface does not turn an unknown into a fact.</p>
+      </header>
+      <section class="method-grid">
+        <article><span>+25</span><h2>FACTORY PROVENANCE</h2><p>The launch event and current factory record must agree on token, curve, deployer and pair.</p></article>
+        <article><span>+15</span><h2>NATIVE ETH PAIR</h2><p>The default policy accepts native ETH. Other pairs fail closed instead of being guessed through.</p></article>
+        <article><span>+10</span><h2>ACTIVE PHASE</h2><p>CURVE or POOL is active. SWEPT and RESCUED are blocked from the watch route.</p></article>
+        <article><span>+10</span><h2>CREATOR TAX</h2><p>At or below 2% gets full weight. Above 5% becomes an explicit blocker.</p></article>
+        <article><span>+10</span><h2>SNIPE TAX</h2><p>The current opening tax is read for a fixed probe recipient and displayed separately.</p></article>
+        <article><span>+25</span><h2>CURVE PROGRESS</h2><p>Progress adds graduated weight. It is not profit, price momentum or a promise of graduation.</p></article>
+      </section>
+      <section class="method-proof">
+        <div><span>BOUNDARY</span><strong>ETH_CALL + ETH_GETLOGS</strong><p>No key, seed, signer, transaction builder or live flag exists in the deployed route.</p></div>
+        <div><span>UNKNOWN</span><strong>SLIPPAGE + SOCIAL QUALITY</strong><p>Not yet measured. Both remain visible as unresolved evidence in every selected launch.</p></div>
+        <div><span>PUBLIC PROOF</span><strong>34 TESTS · OPEN SOURCE</strong><p><a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">READ THE CODE ↗</a></p></div>
+      </section>
+    </section>
+
+    <section class="room-view vault-room" data-room="vault" hidden>
+      <div class="vault-seal" aria-hidden="true"><span>VAULT</span></div>
+      <header class="room-hero vault-hero">
+        <div><p class="eyebrow">SEALED UNTIL THE CONTRACT EXISTS</p><h1>THE<br><em>VAULT.</em></h1></div>
+        <p>This is the future holder layer: saved rules, longer deployer windows, more simultaneous watches and private alerts. It will not ask for an approval or transaction.</p>
+      </header>
+      <section class="vault-grid">
+        <article><b>01</b><h2>SAVED RULESETS</h2><p>Your own WATCH and VETO thresholds, stored against a signed session.</p></article>
+        <article><b>02</b><h2>LONG MEMORY</h2><p>Deployer history beyond the public rolling window, with exact source blocks.</p></article>
+        <article><b>03</b><h2>MULTI-WATCH</h2><p>Several selected launches refreshing together instead of one public desk.</p></article>
+        <article><b>04</b><h2>PRIVATE ALERTS</h2><p>A read-only notification when a launch crosses your rule. Never an automated order.</p></article>
+      </section>
+      <p class="vault-disclosure">NOT LIVE · NO CONTRACT HAS BEEN INSERTED · NO WALLET CONNECTION IS ENABLED</p>
+    </section>
+  </main>
+
+  <footer class="room-footer">
+    <span>GPTHEIST / READ-ONLY INTELLIGENCE</span>
+    <nav class="social-links"><a href="https://x.com/immortalhowwl" target="_blank" rel="noopener noreferrer">LOGICS ↗</a><a href="https://github.com/immortalhowwl/gptheist" target="_blank" rel="noopener noreferrer">GITHUB ↗</a></nav>
+    <span id="updated">NOT YET SYNCED</span>
+  </footer>
+  <script src="/rooms.js" defer></script>
+</body>
+</html>
